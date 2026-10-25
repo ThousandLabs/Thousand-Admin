@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c0e1b">
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Thousand Admin">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>Thousand Admin</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0c0e1b;--card:#151930;--card2:#1b1f39;--text:#eef0ff;--muted:#9399bf;--line:#262b49;--pri:#f5b942;--pri2:#ff8a3d;--soft:#3a2d12;--danger:#ff6b6b;--ok:#3ddc97;--app:#f5b942;color-scheme:dark}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+.wrap{max-width:560px;margin:0 auto;padding:12px 16px 40px;padding-top:calc(12px + env(safe-area-inset-top))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0}
+.brand{display:flex;align-items:center;gap:10px}.brand svg{width:40px;height:40px}
+.brand b{display:block;font-size:17px}.brand small{color:var(--muted);font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin:14px 0}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px;font-weight:600}
+input,textarea{width:100%;min-height:46px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card2);outline:none}
+textarea{min-height:80px;font:12px/1.4 ui-monospace,Menlo,monospace;resize:vertical}
+input:focus,textarea:focus{border-color:var(--app)}
+.mono{font-family:ui-monospace,Menlo,monospace;letter-spacing:1px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 16px;border-radius:14px;background:var(--card2);border:1px solid var(--line);font-weight:600;text-decoration:none;color:var(--text);text-align:center}
+.btn.pri{background:var(--app);color:#14101e;border:0}
+.btn.gold{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#1a1206;border:0}
+.btn.block{display:flex;width:100%;margin-top:12px}
+.btn.sm{min-height:34px;padding:0 12px;font-size:13px;border-radius:10px}
+.btn.danger{color:var(--danger)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.btns .btn{flex:1}
+.codebox{font:700 13px/1.5 ui-monospace,Menlo,monospace;word-break:break-all;color:var(--app);padding:12px 14px;border-radius:14px;background:var(--card2);border:1px dashed var(--app);margin-top:8px}
+.muted{color:var(--muted)}.small{font-size:13px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+.tab{padding:10px 6px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-weight:700;font-size:13px}
+.tab small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.tab.on{border-color:var(--app);background:var(--card2);box-shadow:0 0 0 2px var(--app) inset}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.stats div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}
+.stats b{display:block;font-size:22px;color:var(--app)}.stats small{color:var(--muted);font-size:12px}
+.li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.li .g{flex:1;min-width:0}.li .g b,.li .g small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.li .g small{color:var(--muted);font-size:12px}
+.tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--card2);border:1px solid var(--line)}
+.center{max-width:400px;margin:0 auto;padding:48px 18px;text-align:center}
+.center .card{text-align:left}.center svg{width:72px;height:72px;margin:0 auto 10px}
+.ok{color:var(--ok)}.bad{color:var(--danger)}
+.qr{display:block;width:100%;max-width:320px;height:auto;margin:12px auto;border-radius:14px;image-rendering:pixelated}
+.scanbox{position:relative;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:1/1;max-width:360px;margin:12px auto}
+.scanbox video{width:100%;height:100%;object-fit:cover;display:block}
+.scanbox i{position:absolute;inset:14%;border:3px solid rgba(255,255,255,.9);border-radius:18px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+.ov{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--card);border-radius:24px 24px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+@media(min-width:620px){.ov{align-items:center}.sheet{border-radius:24px}}
+.cm{text-align:center}
+.hidden{display:none!important}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#fff;color:#151834;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="ov" class="ov hidden"><div class="sheet" id="sheet"></div></div>
+<div id="toast"></div>
+<script>
+'use strict';
+/* =========================================================
+   THOUSAND ADMIN — générateur de codes pour Nexus Track, Budget Flow et ScoreUp
+   Les clés secrètes sont CHIFFRÉES par ton mot de passe : sans lui, ce fichier ne sert à rien.
+   ========================================================= */
+const VAULT0 = {"v": 1, "iter": 210000, "salt": "CpUl3wugTs5nHdW5Z/+2/w==", "iv": "DswcvAhU+dV+ILPN", "ct": "2i6c8cktz8w5uyBkMmpPrKlYhwp/JHxh4r62lqKJW+Q8aYMo5xejOAzcJXySJ5Icx/6WYtaExRFfj0a32Lk0FpQ3Zpf34dWfi2yVZL43GtMFO6iXiMHdZ2z5CKYvMSVxcXYKtGhNHi1kXqIdNjpzcdQ2jR1l0MD5vI7ViZnFAhFKw3fH99scpQMloKfkTUHwUhHTWbsN92o1Q7gnQhPdz+m4ZF6L9P2lvrKbHCMpfQ6+3z/YOz1ikwN2RU2a8Y8VTMDB3R1nZ5W9LgcgKdYV/GiaMxGno8n8z3AXZSJpJjO+zso4WbwUpV/YmF0fCDpn2ukrYPewynrmsLbVoih6SnN4QZcgryUmj161RMcy/ReKjp6OPpx8Gb62cicZa6lCkqRVWv8rsRvSS/ml/6S2ForUHWZUSzq7kOt6NPMQxR55WmzFtuGoQh1B2Bko7x97gUdMyTOj52o5+MtfW1Ola/R2GC33z8d/foKevVHlfVNojvtpMOoe6dXem5/gLlNajkfn6A=="};          // clés de départ, chiffrées avec le mot de passe de départ
+const EXTRA = {scoreup:{"v": 1, "iter": 210000, "salt": "L5wQ21bdxD7ZRnIYCDLpjA==", "iv": "J/Cw51w8BjDsizHG", "ct": "mJxcMg4o8L3/XABK8LZ0atQauPIJ2cvkKCjpMZ7uyU+Cxy+ckpl4Q4nhonE+4LDN7CxzU6Zcbe1cCEQDtp9Q7eO5cpepXBfiTi9AL5XZCV1FQvUJGIgPgRrtsI1GynPSiaERTR3XdRb3WhbD+Vn3lFFs7QmBPa1biZ9RpIrJiu+WQnLsVpPnLYXWUGg2SU9heI410luMgWk/jtCR7bIKzi7jmKyNeQ1V3mPw/9fQCqF3XIijsJ7Q87S1TchtKsA7tkPn37k3uxcUsA8Z"}};   // clé ScoreUp v2, chiffrée avec le mot de passe de départ
+const PUB = {"nexus": {"kty": "EC", "crv": "P-256", "x": "Ve64rRTv47enrEMEcO9AU6c6EXu2aw0nAcFtZgerGN0", "y": "vxLMFjXKqS6IgmdNpRH_AjQmy0Z0fWpscSJAj0Qlg_Q"}, "budget": {"kty": "EC", "crv": "P-256", "x": "pcF7mT3FVUz-KyYrnAS_KaplrCOu1NVeIPZrFN8MfiM", "y": "PCDYshME04Lczd0f_C6neNBZR0G7Canh4ROT-7hjhCs"}, "scoreup": {"kty": "EC", "crv": "P-256", "x": "SHoZAs_cwa82xgMOI6zzDtzeSulWF-mLTZnPy-bHAS0", "y": "KzNwMXGq_Sx00QFmaXRgNcGdcS-GmcK8i0akGx6WDh8"}};               // clés publiques (pour vérifier)
+const CONTACT_NAME = 'Thousand Labs';
+const VKEY='tla_vault', HKEY='tla_history', AKEY='tla_app';
+const AL_NX='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', AL_BF='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const up=v=>String(v||'').toUpperCase();
+const APPS={
+  nexus:{name:'Nexus Track',short:'Nexus',color:'#8b7dff',idPh:'NX-XXXX-XXXX',qid:'NXID:',qcode:'NXCODE:',
+    norm(v){let x=up(v).replace(/[^A-Z0-9]/g,'');if(x.startsWith('NX'))x=x.slice(2);return x.length===8&&[...x].every(c=>AL_NX.includes(c))?'NX-'+x.slice(0,4)+'-'+x.slice(4):null},
+    hint:'Le client touche « 🔳 QR » à côté de son ID sur l\'écran d\'activation.',scanHint:'Le client touche « 📷 Scanner le code du vendeur ».'},
+  budget:{name:'Budget Flow',short:'Budget',color:'#14b8a6',idPh:'BF-XXXX-XXXX',qid:'BFID:',qcode:'BFCODE:',
+    norm(v){let x=up(v).replace(/[^A-Z0-9]/g,'');if(x.startsWith('BF'))x=x.slice(2);return x.length===8&&[...x].every(c=>AL_BF.includes(c))?'BF-'+x.slice(0,4)+'-'+x.slice(4):null},
+    hint:'Le client touche « 🔳 QR » sous son code appareil.',scanHint:'Le client touche « 📷 Scanner le code du vendeur ».'},
+  scoreup:{name:'ScoreUp',short:'ScoreUp',color:'#6f8cff',idPh:'XXXX-XXXX-XXXX-XXXX-XXXX-XXXX',qid:'SUID:',qcode:'SUCODE:',
+    norm(v){const x=String(v||'').toLowerCase().replace(/[^0-9a-f]/g,'');return x.length===24?x:null},
+    show:id=>id.toUpperCase().replace(/(.{4})(?=.)/g,'$1-'),
+    hint:'Le client touche « 🔳 Afficher en QR » sous son identifiant.',scanHint:'Le client touche « 📷 Scanner le code ».'}
+};
+const showId=(app,id)=>APPS[app].show?APPS[app].show(id):id;
+
+/* ---------- crypto ---------- */
+const S=crypto.subtle,enc=s=>new TextEncoder().encode(s);
+const b64=u=>{let s='';u=new Uint8Array(u);for(let i=0;i<u.length;i++)s+=String.fromCharCode(u[i]);return btoa(s)};
+const unb64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
+const b64u=u=>b64(u).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const unb64u=t=>{t=String(t).replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';return unb64(t)};
+async function aesKey(pass,salt,iter,use){const base=await S.importKey('raw',enc(pass),'PBKDF2',false,['deriveKey']);return S.deriveKey({name:'PBKDF2',salt,iterations:iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,[use])}
+async function openVault(v,pass){const k=await aesKey(pass,unb64(v.salt),v.iter,'decrypt');const pt=await S.decrypt({name:'AES-GCM',iv:unb64(v.iv)},k,unb64(v.ct));return JSON.parse(new TextDecoder().decode(pt))}
+async function sealVault(keys,pass){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),iter=210000;const k=await aesKey(pass,salt,iter,'encrypt');const ct=await S.encrypt({name:'AES-GCM',iv},k,enc(JSON.stringify(keys)));return {v:1,iter,salt:b64(salt),iv:b64(iv),ct:b64(ct)}}
+async function sign(app,id){const k=await S.importKey('jwk',KEYS[app],{name:'ECDSA',namedCurve:'P-256'},false,['sign']);return b64u(await S.sign({name:'ECDSA',hash:'SHA-256'},k,enc(id)))}
+async function verify(app,id,code){try{const k=await S.importKey('jwk',PUB[app],{name:'ECDSA',namedCurve:'P-256'},false,['verify']);return await S.verify({name:'ECDSA',hash:'SHA-256'},k,unb64u(code),enc(id))}catch(e){return false}}
+
+/* ---------- état ---------- */
+let KEYS=null,PASS=null,last=null,q='',cur=lsGet(AKEY)||'nexus';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){toast('⚠️ Stockage bloqué')}}
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600)}
+async function copyText(t){try{await navigator.clipboard.writeText(t);toast('Copié ✅')}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('Copié ✅')}catch(_){}a.remove()}}
+function waPhone(p){let d=String(p||'').replace(/\D/g,'');if(d.startsWith('00'))d=d.slice(2);if(d.length===9)d='221'+d;return d}
+const history_=()=>{try{return JSON.parse(lsGet(HKEY))||[]}catch(e){return []}};
+const saveHistory=h=>lsSet(HKEY,JSON.stringify(h));
+const localVault=()=>{try{return JSON.parse(lsGet(VKEY))}catch(e){return null}};
+const LOGO='<svg viewBox="0 0 64 64"><defs><linearGradient id="ag" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5b942"/><stop offset="1" stop-color="#ff8a3d"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#ag)"/><path d="M32 19L19 44M32 19L45 44" stroke="#1a1206" stroke-opacity=".5" stroke-width="3.2" stroke-linecap="round"/><path d="M19 44H45" stroke="#1a1206" stroke-width="3.2" stroke-linecap="round"/><circle cx="32" cy="19" r="5.5" fill="#1a1206"/><circle cx="19" cy="44" r="5.5" fill="#1a1206"/><circle cx="45" cy="44" r="5.5" fill="#1a1206"/></svg>';
+function openSheet(h){stopScan();$('#sheet').innerHTML=h;$('#ov').classList.remove('hidden')}
+function closeSheet(){stopScan();$('#ov').classList.add('hidden');$('#sheet').innerHTML=''}
+
+/* ---------- QR code : générateur intégré (hors ligne) + lecteur caméra ---------- */
+const QR=(()=>{
+  const ECC={L:[-1,7,10,15,20,26,18,20,24,30,18,20,24,26,30,22,24,28,30,28,28,28,28,30,30,26,28,30,30,30,30,30,30,30,30,30,30,30,30,30,30],M:[-1,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26,26,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28]};
+  const BLK={L:[-1,1,1,1,1,1,2,2,2,2,4,4,4,4,4,6,6,6,6,7,8,8,9,9,10,12,12,12,13,14,15,16,17,18,19,19,20,21,22,24,25],M:[-1,1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17,17,18,20,21,23,25,26,28,29,31,33,35,37,38,40,43,45,47,49]};
+  const FMT={L:1,M:0};
+  const mul=(x,y)=>{let z=0;for(let i=7;i>=0;i--){z=(z<<1)^((z>>>7)*0x11D);z^=((y>>>i)&1)*x}return z};
+  const rawModules=v=>{let r=(16*v+128)*v+64;if(v>=2){const na=Math.floor(v/7)+2;r-=(25*na-10)*na-55;if(v>=7)r-=36}return r};
+  const dataCw=(v,e)=>Math.floor(rawModules(v)/8)-ECC[e][v]*BLK[e][v];
+  const alignPos=v=>{if(v===1)return [];const na=Math.floor(v/7)+2,size=v*4+17,step=v===32?26:Math.ceil((v*4+4)/(na*2-2))*2,r=[6];for(let p=size-7;r.length<na;p-=step)r.splice(1,0,p);return r};
+  const rsDiv=d=>{const r=new Array(d).fill(0);r[d-1]=1;let root=1;for(let i=0;i<d;i++){for(let j=0;j<d;j++){r[j]=mul(r[j],root);if(j+1<d)r[j]^=r[j+1]}root=mul(root,2)}return r};
+  const rsRem=(data,div)=>{const r=div.map(()=>0);for(const b of data){const f=b^r.shift();r.push(0);div.forEach((c,i)=>{r[i]^=mul(c,f)})}return r};
+  const MASKS=[(x,y)=>(x+y)%2===0,(x,y)=>y%2===0,(x,y)=>x%3===0,(x,y)=>(x+y)%3===0,(x,y)=>(Math.floor(x/3)+Math.floor(y/2))%2===0,(x,y)=>x*y%2+x*y%3===0,(x,y)=>(x*y%2+x*y%3)%2===0,(x,y)=>((x+y)%2+x*y%3)%2===0];
+  function penalty(M,n){let p=0,dark=0;
+    for(let a=0;a<n;a++){let rr=1,rc=1;for(let b=1;b<=n;b++){if(b<n&&M[a][b]===M[a][b-1])rr++;else{if(rr>=5)p+=rr-2;rr=1}if(b<n&&M[b][a]===M[b-1][a])rc++;else{if(rc>=5)p+=rc-2;rc=1}}}
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++){if(M[y][x])dark++;if(y<n-1&&x<n-1){const c=M[y][x];if(c===M[y][x+1]&&c===M[y+1][x]&&c===M[y+1][x+1])p+=3}}
+    return p+Math.max(0,Math.ceil(Math.abs(dark*20-n*n*10)/(n*n))-1)*10}
+  function encode(text,e){e=e||'L';const bytes=Array.from(new TextEncoder().encode(text));let v=1,cap=0;
+    for(;v<=40;v++){cap=dataCw(v,e)*8;if(4+(v<10?8:16)+bytes.length*8<=cap)break}
+    if(v>40)throw new Error('Données trop longues pour un QR code');
+    const bits=[],put=(val,len)=>{for(let i=len-1;i>=0;i--)bits.push((val>>>i)&1)};
+    put(4,4);put(bytes.length,v<10?8:16);bytes.forEach(b=>put(b,8));
+    put(0,Math.min(4,cap-bits.length));put(0,(8-bits.length%8)%8);for(let p=0xEC;bits.length<cap;p^=0xEC^0x11)put(p,8);
+    const data=[];for(let i=0;i<bits.length;i+=8){let b=0;for(let j=0;j<8;j++)b=(b<<1)|bits[i+j];data.push(b)}
+    const nb=BLK[e][v],el=ECC[e][v],raw=Math.floor(rawModules(v)/8),nShort=nb-raw%nb,shortLen=Math.floor(raw/nb),div=rsDiv(el),blocks=[];
+    for(let i=0,k=0;i<nb;i++){const dat=data.slice(k,k+shortLen-el+(i<nShort?0:1));k+=dat.length;const ec=rsRem(dat,div);if(i<nShort)dat.push(0);blocks.push(dat.concat(ec))}
+    const all=[];for(let i=0;i<blocks[0].length;i++)blocks.forEach((b,j)=>{if(i!==shortLen-el||j>=nShort)all.push(b[i])});
+    const size=v*4+17,M=Array.from({length:size},()=>new Array(size).fill(false)),F=Array.from({length:size},()=>new Array(size).fill(false));
+    const setF=(x,y,d)=>{M[y][x]=d;F[y][x]=true};
+    for(let i=0;i<size;i++){setF(6,i,i%2===0);setF(i,6,i%2===0)}
+    [[3,3],[size-4,3],[3,size-4]].forEach(([cx,cy])=>{for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){const xx=cx+dx,yy=cy+dy;if(xx>=0&&xx<size&&yy>=0&&yy<size){const d=Math.max(Math.abs(dx),Math.abs(dy));setF(xx,yy,d!==2&&d!==4)}}});
+    const ap=alignPos(v),na=ap.length;
+    for(let i=0;i<na;i++)for(let j=0;j<na;j++){if((i===0&&j===0)||(i===0&&j===na-1)||(i===na-1&&j===0))continue;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)setF(ap[i]+dx,ap[j]+dy,Math.max(Math.abs(dx),Math.abs(dy))!==1)}
+    const drawFmt=m=>{const d=FMT[e]<<3|m;let r=d;for(let i=0;i<10;i++)r=(r<<1)^((r>>>9)*0x537);const b=((d<<10)|r)^0x5412,g=i=>((b>>>i)&1)!==0;
+      for(let i=0;i<=5;i++)setF(8,i,g(i));setF(8,7,g(6));setF(8,8,g(7));setF(7,8,g(8));for(let i=9;i<15;i++)setF(14-i,8,g(i));
+      for(let i=0;i<8;i++)setF(size-1-i,8,g(i));for(let i=8;i<15;i++)setF(8,size-15+i,g(i));setF(8,size-8,true)};
+    drawFmt(0);
+    if(v>=7){let r=v;for(let i=0;i<12;i++)r=(r<<1)^((r>>>11)*0x1F25);const b=v<<12|r;for(let i=0;i<18;i++){const bt=((b>>>i)&1)!==0,a=size-11+i%3,c=Math.floor(i/3);setF(a,c,bt);setF(c,a,bt)}}
+    let idx=0;for(let right=size-1;right>=1;right-=2){if(right===6)right=5;for(let vert=0;vert<size;vert++)for(let j=0;j<2;j++){const x=right-j,up=((right+1)&2)===0,y=up?size-1-vert:vert;if(!F[y][x]&&idx<all.length*8){M[y][x]=((all[idx>>>3]>>>(7-(idx&7)))&1)!==0;idx++}}}
+    const apply=m=>{for(let y=0;y<size;y++)for(let x=0;x<size;x++)if(!F[y][x]&&MASKS[m](x,y))M[y][x]=!M[y][x]};
+    let best=0,bp=Infinity;for(let m=0;m<8;m++){apply(m);drawFmt(m);const p=penalty(M,size);if(p<bp){bp=p;best=m}apply(m)}
+    apply(best);drawFmt(best);return M}
+  function canvas(text,px,e){const q=encode(text,e),n=q.length,quiet=4,total=n+quiet*2,scale=Math.max(2,Math.floor((px||300)/total)),c=document.createElement('canvas');
+    c.width=c.height=total*scale;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.fillStyle='#000';
+    for(let y=0;y<n;y++)for(let xx=0;xx<n;xx++)if(q[y][xx])x.fillRect((xx+quiet)*scale,(y+quiet)*scale,scale,scale);c.className='qr';return c}
+  return {encode,canvas};
+})();
+
+/* Lecteur : BarcodeDetector (Android/Chrome) sinon jsQR chargé à la demande (puis gardé hors ligne) */
+let scanStream=null,scanTimer=null;
+function loadJsQR(){return new Promise((ok,ko)=>{if(window.jsQR)return ok();const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';s.onload=()=>window.jsQR?ok():ko();s.onerror=ko;document.head.appendChild(s)})}
+async function startScan(video,status,onText){
+  stopScan();
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){status.textContent='📵 Caméra non disponible ici. Ouvre l\'appli installée (site en https).';return}
+  try{scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false})}catch(e){status.textContent='📵 Accès à la caméra refusé. Autorise-le dans les réglages du navigateur.';return}
+  video.setAttribute('playsinline','');video.muted=true;video.srcObject=scanStream;try{await video.play()}catch(e){}
+  let detect=null;
+  if('BarcodeDetector' in window){try{const bd=new BarcodeDetector({formats:['qr_code']});detect=async()=>{const r=await bd.detect(video);return r.length?r[0].rawValue:null}}catch(e){detect=null}}
+  if(!detect){status.textContent='Chargement du lecteur…';try{await loadJsQR()}catch(e){status.textContent='❌ Lecteur QR indisponible hors ligne sur ce téléphone. Utilise le message ou le fichier.';stopScan();return}
+    const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
+    detect=async()=>{const w=video.videoWidth,h=video.videoHeight;if(!w)return null;const s=Math.min(1,720/Math.max(w,h));cv.width=w*s|0;cv.height=h*s|0;cx.drawImage(video,0,0,cv.width,cv.height);const r=window.jsQR(cx.getImageData(0,0,cv.width,cv.height).data,cv.width,cv.height,{inversionAttempts:'dontInvert'});return r?r.data:null}}
+  if(!scanStream)return;
+  status.textContent='🎯 Vise le QR code…';
+  let busy=false;scanTimer=setInterval(async()=>{if(busy||!scanStream)return;busy=true;try{const t=await detect();if(t)onText(t)}catch(e){}busy=false},160);
+}
+function stopScan(){clearInterval(scanTimer);scanTimer=null;if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}}
+
+
+/* ---------- écrans ---------- */
+function render(){
+  const app=$('#app');document.documentElement.style.setProperty('--app',APPS[cur].color);
+  if(!localVault()){app.innerHTML='<div class="center">'+LOGO+'<h2>Thousand Admin</h2><p class="muted small">Première ouverture sur cet appareil.</p><form class="card" data-form="setup"><label style="margin-top:0">Mot de passe de départ</label><input type="password" name="p0" required autocomplete="off" placeholder="TL-…"><label>Choisis ton mot de passe</label><input type="password" name="p1" required minlength="6" autocomplete="new-password"><label>Confirme-le</label><input type="password" name="p2" required minlength="6" autocomplete="new-password"><button class="btn gold block">Déverrouiller</button></form><label class="btn block">♻️ Restaurer une sauvegarde de clés<input type="file" data-file="vault" accept=".json,application/json" hidden></label><p class="muted small">🔒 Les clés restent chiffrées sur ce téléphone. Sans ton mot de passe, elles sont inutilisables.</p></div>';return}
+  if(!KEYS){app.innerHTML='<div class="center">'+LOGO+'<h2>Thousand Admin</h2><p class="muted small">Accès réservé</p><form class="card" data-form="login"><label style="margin-top:0">Mot de passe</label><input type="password" name="p" required autocomplete="current-password"><button class="btn gold block">Entrer</button></form></div>';return}
+  const A=APPS[cur],h=history_(),hc=h.filter(x=>x.app===cur),m=new Date().toISOString().slice(0,7);
+  let html='<div class="wrap"><div class="top"><div class="brand">'+LOGO+'<div><b>Thousand Admin</b><small>Codes d\'activation · '+CONTACT_NAME+'</small></div></div><button class="btn sm" data-act="logout">🔒 Quitter</button></div>';
+  html+='<div class="tabs">'+Object.entries(APPS).map(([k,a])=>'<button class="tab '+(k===cur?'on':'')+'" data-act="tab" data-k="'+k+'" style="'+(k===cur?'--app:'+a.color:'')+'">'+a.name+'<small>'+h.filter(x=>x.app===k).length+' code(s)</small></button>').join('')+'</div>';
+  html+='<div class="stats"><div><b>'+hc.length+'</b><small>codes '+A.short+'</small></div><div><b>'+hc.filter(x=>new Date(x.at).toISOString().slice(0,7)===m).length+'</b><small>ce mois</small></div><div><b>'+h.length+'</b><small>tous les apps</small></div></div>';
+  if(!KEYS[cur]&&EXTRA[cur]){
+    html+='<form class="card" data-form="extra"><b>🔑 Activer la clé '+A.name+'</b><p class="muted small">Une seule fois : tape le <b>mot de passe de départ</b> (celui qui commence par TL-) pour ajouter la clé '+A.name+' à ton coffre.</p><input type="password" name="p0" required autocomplete="off" placeholder="TL-…"><button class="btn gold block">Activer</button></form>';
+  }else if(!KEYS[cur]){
+    html+='<div class="card"><b>🔑 Importer ta clé '+A.name+'</b><p class="muted small">Pour générer des codes '+A.name+' ici, ouvre le fichier de ton ancien générateur '+A.name+' ci-dessous : la clé est trouvée et vérifiée automatiquement, puis chiffrée avec ton mot de passe.</p><label class="btn gold block">📂 Choisir l\'ancien générateur (.html)<input type="file" data-file="oldgen" accept=".html,.htm,.txt,.json,text/html" hidden></label><label>…ou colle ici sa clé (JSON avec « d »)</label><textarea id="keyPaste" placeholder=\'{"kty":"EC","crv":"P-256","d":"…"}\'></textarea><button class="btn block" data-act="importPaste">Importer la clé collée</button></div>';
+  }else{
+    html+='<form class="card" data-form="gen"><b>🔑 Générer un code '+A.name+'</b><label>Identifiant de l\'appareil</label><input name="id" class="mono" required placeholder="'+A.idPh+'" autocomplete="off" spellcheck="false"><button type="button" class="btn block" data-act="scanId" style="margin-top:8px">📷 Scanner l\'identifiant du client</button><div class="row" style="gap:10px"><div style="flex:1"><label>Nom du client</label><input name="client" maxlength="40" placeholder="Ex : Awa Diop"></div><div style="flex:1"><label>WhatsApp</label><input name="phone" type="tel" inputmode="tel" maxlength="20" placeholder="77 123 45 67"></div></div><label>Note (pack, prix…)</label><input name="note" maxlength="80" placeholder="Ex : pack 5, payé Wave"><button class="btn pri block">Générer le code</button></form>';
+    if(last&&last.app===cur)html+='<div class="card"><div class="row"><b>✅ Code pour '+esc(last.client||showId(cur,last.id))+'</b><span class="tag">'+A.name+'</span></div><div class="codebox">'+esc(last.code)+'</div>'+(last.dup?'<p class="small muted">ℹ️ Cet appareil avait déjà reçu un code le '+new Date(last.dup).toLocaleDateString('fr-FR')+'.</p>':'')+'<div class="btns"><button class="btn" data-act="copy" data-t="'+esc(last.code)+'">📋 Copier</button><button class="btn" data-act="showCodeQR">🔳 QR</button><button class="btn pri" data-act="sendWa">💬 WhatsApp</button></div></div>';
+    html+='<form class="card" data-form="check"><b>🔍 Vérifier un code '+A.name+'</b><label>Identifiant</label><input name="id" class="mono" required placeholder="'+A.idPh+'"><label>Code</label><textarea name="code" required></textarea><button class="btn block">Vérifier</button><p id="checkRes" class="small"></p></form>';
+  }
+  const list=hc.filter(x=>!q||[x.client,x.id,x.note,x.phone].join(' ').toLowerCase().includes(q.toLowerCase()));
+  html+='<div class="card"><div class="row"><b>🗂️ Historique '+A.name+'</b><button class="btn sm" data-act="csv">⬇️ CSV</button></div><input id="q" type="search" placeholder="Rechercher…" value="'+esc(q)+'" style="margin-top:10px">'+
+    (list.length?list.slice(0,200).map(x=>'<div class="li"><div class="g"><b>'+esc(x.client||'Sans nom')+'</b><small>'+esc(showId(x.app,x.id))+' · '+new Date(x.at).toLocaleDateString('fr-FR')+(x.note?' · '+esc(x.note):'')+'</small></div><button class="btn sm" data-act="copy" data-t="'+esc(x.code)+'">📋</button><button class="btn sm danger" data-act="del" data-at="'+x.at+'" aria-label="Supprimer">✕</button></div>').join(''):'<p class="muted small">Aucun code pour l\'instant.</p>')+'</div>';
+  html+='<div class="card"><b>⚙️ Sécurité</b><form data-form="chpass"><label>Nouveau mot de passe</label><input type="password" name="p" minlength="6" required autocomplete="new-password"><button class="btn block">Changer le mot de passe</button></form><button class="btn block" data-act="backupVault">💾 Sauvegarder mes clés (fichier chiffré)</button><p class="muted small">Garde cette sauvegarde en lieu sûr (ex : envoyée à toi-même). Elle ne s\'ouvre qu\'avec ton mot de passe.</p></div></div>';
+  app.innerHTML=html;
+}
+
+/* ---------- import de l'ancienne clé ScoreUp (ou autre) ---------- */
+async function importKey(text){
+  const g=n=>{const m=String(text).match(new RegExp('["\']?'+n+'["\']?\\s*:\\s*["\']([A-Za-z0-9_-]{30,})["\']'));return m&&m[1]};
+  const d=g('d');if(!d){toast('❌ Aucune clé trouvée dans ce fichier');return}
+  const jwk={kty:'EC',crv:'P-256',x:PUB[cur].x,y:PUB[cur].y,d};
+  try{const k=await S.importKey('jwk',jwk,{name:'ECDSA',namedCurve:'P-256'},false,['sign']);const sig=await S.sign({name:'ECDSA',hash:'SHA-256'},k,enc('test'));
+    const pk=await S.importKey('jwk',PUB[cur],{name:'ECDSA',namedCurve:'P-256'},false,['verify']);if(!await S.verify({name:'ECDSA',hash:'SHA-256'},pk,sig,enc('test')))throw 0}
+  catch(e){toast('❌ Cette clé ne correspond pas à '+APPS[cur].name);return}
+  KEYS[cur]=jwk;lsSet(VKEY,JSON.stringify(await sealVault(KEYS,PASS)));render();toast('✅ Clé '+APPS[cur].name+' importée et chiffrée')}
+
+const FORMS={
+  setup:async fd=>{const p0=String(fd.get('p0')).trim(),a=fd.get('p1'),b=fd.get('p2');if(a!==b){toast('Les deux mots de passe sont différents');return}
+    toast('Déverrouillage…');let keys;try{keys=await openVault(VAULT0,p0)}catch(e){toast('❌ Mot de passe de départ incorrect');return}
+    lsSet(VKEY,JSON.stringify(await sealVault(keys,a)));KEYS=keys;PASS=a;render();toast('✅ Prêt ! Ton mot de passe protège maintenant les clés')},
+  login:async fd=>{const p=fd.get('p');toast('Vérification…');try{KEYS=await openVault(localVault(),p);PASS=p;render()}catch(e){toast('❌ Mot de passe incorrect')}},
+  extra:async fd=>{toast('Déverrouillage…');let k;try{k=await openVault(EXTRA[cur],String(fd.get('p0')).trim())}catch(e){toast('❌ Mot de passe de départ incorrect');return}
+    Object.assign(KEYS,k);lsSet(VKEY,JSON.stringify(await sealVault(KEYS,PASS)));render();toast('✅ Clé '+APPS[cur].name+' activée')},
+  gen:async fd=>{const id=APPS[cur].norm(fd.get('id'));if(!id){toast('❌ Identifiant invalide (format '+APPS[cur].idPh+')');return}
+    const code=await sign(cur,id),h=history_(),prev=h.find(x=>x.app===cur&&x.id===id);
+    const rec={at:Date.now(),app:cur,id,code,client:String(fd.get('client')||'').trim(),phone:String(fd.get('phone')||'').trim(),note:String(fd.get('note')||'').trim()};
+    h.unshift(rec);saveHistory(h);last=Object.assign({dup:prev?prev.at:0},rec);render();toast('Code généré ✅')},
+  check:async fd=>{const id=APPS[cur].norm(fd.get('id')),r=$('#checkRes');if(!id){r.innerHTML='<span class="bad">❌ Identifiant invalide</span>';return}
+    const c=String(fd.get('code')).replace(/\s+/g,'').replace(/^[A-Z]+CODE:/,'');r.innerHTML=(await verify(cur,id,c))?'<span class="ok">✅ Code valide pour cet appareil</span>':'<span class="bad">❌ Code invalide pour cet appareil</span>'},
+  chpass:async fd=>{PASS=fd.get('p');lsSet(VKEY,JSON.stringify(await sealVault(KEYS,PASS)));toast('Mot de passe changé ✅');render()}
+};
+const ACT={
+  tab:t=>{cur=t.dataset.k;lsSet(AKEY,cur);q='';render()},
+  logout:()=>{KEYS=null;PASS=null;last=null;render()},
+  copy:t=>copyText(t.dataset.t),
+  closeSheet:()=>closeSheet(),
+  importPaste:()=>importKey($('#keyPaste').value),
+  scanId:()=>{const A=APPS[cur];openSheet('<div class="row"><b>📷 Scanner l\'identifiant</b><button class="btn sm" data-act="closeSheet">✕</button></div><p class="muted small cm">'+A.hint+'</p><div class="scanbox"><video id="scanV"></video><i></i></div><p id="scanS" class="small cm">Ouverture de la caméra…</p>');
+    startScan($('#scanV'),$('#scanS'),t=>{t=String(t).trim();let id=null;for(const [k,a] of Object.entries(APPS)){if(t.startsWith(a.qid)){if(k!==cur){$('#scanS').textContent='⚠️ Ce QR est pour '+a.name+', pas '+A.name;return}id=A.norm(t.slice(a.qid.length))}}
+      if(!id)id=A.norm(t);if(id){closeSheet();const i=document.querySelector('form[data-form=gen] [name=id]');if(i)i.value=showId(cur,id);try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}toast('Identifiant scanné ✅')}})},
+  showCodeQR:()=>{if(!last)return;const A=APPS[cur];openSheet('<div class="row"><b>🔳 Code de '+esc(last.client||showId(cur,last.id))+'</b><button class="btn sm" data-act="closeSheet">✕</button></div><p class="muted small cm">'+A.scanHint+' L\'appli s\'active toute seule.</p><div id="qrBox"></div>');$('#qrBox').appendChild(QR.canvas(A.qcode+last.code,640,'M'))},
+  sendWa:()=>{if(!last)return;const A=APPS[last.app];const txt='Bonjour'+(last.client?' '+last.client:'')+' 👋\n\nVoici ton code d\'activation *'+A.name+'* (à copier en entier) :\n\n'+last.code+'\n\nIl fonctionne uniquement sur ton téléphone. Bienvenue ! 🚀';
+    window.open(last.phone?'https://wa.me/'+waPhone(last.phone)+'?text='+encodeURIComponent(txt):'https://wa.me/?text='+encodeURIComponent(txt),'_blank')},
+  del:t=>{if(!confirm('Retirer ce code de l\'historique ? (Il reste valable sur le téléphone du client.)'))return;saveHistory(history_().filter(x=>String(x.at)!==t.dataset.at));render()},
+  csv:()=>{const h=history_();const rows=[['Date','Appli','Client','WhatsApp','Identifiant','Note','Code']].concat(h.map(x=>[new Date(x.at).toLocaleString('fr-FR'),APPS[x.app]?APPS[x.app].name:x.app,x.client,x.phone,showId(x.app,x.id),x.note,x.code]));
+    const csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\n');
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='thousand-codes-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500)},
+  backupVault:()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'thousand-admin-vault',at:Date.now(),vault:localVault()})],{type:'application/json'}));a.download='thousand-admin-cles-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500);toast('Sauvegarde téléchargée 💾')}
+};
+document.addEventListener('submit',e=>{const f=e.target;if(!f.dataset.form)return;e.preventDefault();FORMS[f.dataset.form]&&FORMS[f.dataset.form](new FormData(f),f)});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(t&&ACT[t.dataset.act]){e.preventDefault();ACT[t.dataset.act](t)}});
+$('#ov').addEventListener('click',e=>{if(e.target.id==='ov')closeSheet()});
+document.addEventListener('input',e=>{if(e.target.id==='q'){q=e.target.value;const pos=e.target.selectionStart;render();const n=$('#q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}});
+document.addEventListener('change',async e=>{const t=e.target;if(!t.dataset.file||!t.files||!t.files[0])return;const txt=await t.files[0].text();t.value='';
+  if(t.dataset.file==='oldgen')importKey(txt);
+  if(t.dataset.file==='vault'){try{const o=JSON.parse(txt);if(o.app!=='thousand-admin-vault'||!o.vault)throw 0;lsSet(VKEY,JSON.stringify(o.vault));render();toast('✅ Clés restaurées : entre le mot de passe de cette sauvegarde')}catch(_){toast('❌ Fichier de sauvegarde invalide')}}});
+if(!(window.crypto&&crypto.subtle))document.addEventListener('DOMContentLoaded',()=>toast('⚠️ Ouvre Thousand Admin depuis son lien https'));
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
+render();
+</script>
+</body>
+</html>

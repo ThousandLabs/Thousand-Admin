@@ -70,6 +70,42 @@ input:focus,textarea:focus{border-color:var(--app)}
 <div id="toast"></div>
 <script>
 'use strict';
+
+/* =====================================================================
+   Thousand Labs — section « Installer l'application » (commune à toutes les applis)
+   TLI.html(nom, classeBouton) → bloc à insérer dans les réglages.
+   • Bouton « Installer » quand le navigateur propose l'installation complète
+     (appli sans logo de navigateur sur l'icône).
+   • Sinon : explications pas à pas Android / iPhone / ordinateur.
+   ===================================================================== */
+var TLI=(function(){
+  var evt=null,T=function(s){return (TLI&&TLI.t)?TLI.t(s):s};
+  try{addEventListener('beforeinstallprompt',function(e){e.preventDefault();evt=e;upd()});
+      addEventListener('appinstalled',function(){evt=null;upd()})}catch(e){}
+  function sa(){try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}}
+  function ios(){var u=navigator.userAgent||'';return /iphone|ipad|ipod/i.test(u)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
+  function inner(name,btn){
+    var st='',S='style="margin:6px 0 0;font-size:13.5px;line-height:1.5;opacity:.85"';
+    if(evt)st='<p style="margin:0 0 8px;font-size:14.5px;line-height:1.5">'+T('Ton navigateur peut installer {app} comme une vraie application : icône propre (sans logo de navigateur), plein écran et ouverture hors ligne.').replace('{app}','<b>'+name+'</b>')+'</p>'
+      +'<button type="button" class="'+btn+'" style="width:100%" onclick="TLI.go()">📲 '+T('Installer {app}').replace('{app}',name)+'</button>'
+      +'<p '+S+'>'+T('Tu as déjà une icône avec le petit logo du navigateur ? Après l\'installation, fais une sauvegarde de tes données, puis supprime l\'ancienne icône.')+'</p>';
+    else if(sa())st='<p style="margin:0;font-size:14.5px;line-height:1.5">✅ '+T('{app} est ouverte comme une application.').replace('{app}','<b>'+name+'</b>')+'</p>'
+      +'<p '+S+'>'+T('Si son icône porte le petit logo de ton navigateur, c\'est un simple raccourci. Pour une installation complète, suis les étapes ci-dessous.')+'</p>';
+    else st='<p style="margin:0;font-size:14.5px;line-height:1.5">'+T('Installe {app} sur ton écran d\'accueil : elle s\'ouvrira comme une vraie application, même sans Internet.').replace('{app}','<b>'+name+'</b>')+'</p>';
+    var A='<p style="margin:10px 0 4px"><b>📱 Android (Chrome, Brave, Samsung Internet)</b></p><ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.55"><li>'+T('Ouvre le lien de l\'appli dans le navigateur, avec Internet.')+'</li><li>'+T('Touche le menu <b>⋮</b> (en haut ou en bas à droite).')+'</li><li>'+T('Choisis <b>« Installer l\'application »</b>. Évite « Ajouter à l\'écran d\'accueil » : ça crée un simple raccourci avec le logo du navigateur.')+'</li><li>'+T('Si « Installer » n\'apparaît pas : recharge la page, attends quelques secondes et réessaie.')+'</li></ol>';
+    var I='<p style="margin:10px 0 4px"><b>🍏 iPhone / iPad (Safari)</b></p><ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.55"><li>'+T('Ouvre le lien dans <b>Safari</b>.')+'</li><li>'+T('Touche <b>Partager</b> (le carré avec une flèche).')+'</li><li>'+T('Choisis <b>« Sur l\'écran d\'accueil »</b>, puis <b>Ajouter</b>.')+'</li></ol><p '+S+'>⚠️ '+T('Sur iPhone, installe l\'appli AVANT de l\'activer, puis ouvre-la toujours depuis son icône : l\'iPhone sépare Safari et les applis installées.')+'</p>';
+    var C='<p style="margin:10px 0 4px"><b>💻 '+T('Ordinateur (Chrome, Edge, Brave)')+'</b></p><p style="margin:0;font-size:14px">'+T('Clique sur l\'icône d\'installation à droite de la barre d\'adresse.')+'</p>';
+    var steps=ios()?I+A+C:A+I+C;
+    return st+'<details style="margin-top:10px"'+(evt||sa()?'':' open')+'><summary style="cursor:pointer;font-weight:600;font-size:14px">'+T('Comment installer, pas à pas')+'</summary>'+steps+'</details>';
+  }
+  var last={};
+  function upd(){try{document.querySelectorAll('[data-tli]').forEach(function(el){el.innerHTML=inner(el.getAttribute('data-tli'),el.getAttribute('data-tlib')||'')})}catch(e){}}
+  return {
+    html:function(name,btn){return '<div data-tli="'+name+'" data-tlib="'+(btn||'')+'">'+inner(name,btn||'')+'</div>'},
+    go:function(){if(!evt)return;var e=evt;e.prompt();(e.userChoice||Promise.resolve()).then(function(){evt=null;upd()},function(){evt=null;upd()})},
+    can:function(){return !!evt},standalone:sa,upd:upd,t:null
+  };
+})();
 /* =========================================================
    THOUSAND ADMIN — générateur de codes pour Nexus Track, Budget Flow, ScoreUp et Power Log
    Les clés secrètes sont CHIFFRÉES par ton mot de passe : sans lui, ce fichier ne sert à rien.
@@ -196,8 +232,8 @@ function stopScan(){clearInterval(scanTimer);scanTimer=null;if(scanStream){scanS
 /* ---------- écrans ---------- */
 function render(){
   const app=$('#app');document.documentElement.style.setProperty('--app',APPS[cur].color);
-  if(!localVault()){app.innerHTML='<div class="center">'+LOGO+'<h2>Thousand Admin</h2><p class="muted small">Première ouverture sur cet appareil.</p><form class="card" data-form="setup"><label style="margin-top:0">Mot de passe de départ</label><input type="password" name="p0" required autocomplete="off" placeholder="TL-…"><label>Choisis ton mot de passe</label><input type="password" name="p1" required minlength="6" autocomplete="new-password"><label>Confirme-le</label><input type="password" name="p2" required minlength="6" autocomplete="new-password"><button class="btn gold block">Déverrouiller</button></form><label class="btn block">♻️ Restaurer une sauvegarde de clés<input type="file" data-file="vault" accept=".json,application/json" hidden></label><p class="muted small">🔒 Les clés restent chiffrées sur ce téléphone. Sans ton mot de passe, elles sont inutilisables.</p></div>';return}
-  if(!KEYS){app.innerHTML='<div class="center">'+LOGO+'<h2>Thousand Admin</h2><p class="muted small">Accès réservé</p><form class="card" data-form="login"><label style="margin-top:0">Mot de passe</label><input type="password" name="p" required autocomplete="current-password"><button class="btn gold block">Entrer</button></form></div>';return}
+  if(!localVault()){app.innerHTML='<div class="center">'+LOGO+'<h2>Thousand Admin</h2><p class="muted small">Première ouverture sur cet appareil.</p><form class="card" data-form="setup"><label style="margin-top:0">Mot de passe de départ</label><input type="password" name="p0" required autocomplete="off" placeholder="TL-…"><label>Choisis ton mot de passe</label><input type="password" name="p1" required minlength="6" autocomplete="new-password"><label>Confirme-le</label><input type="password" name="p2" required minlength="6" autocomplete="new-password"><button class="btn gold block">Déverrouiller</button></form><label class="btn block">♻️ Restaurer une sauvegarde de clés<input type="file" data-file="vault" accept=".json,application/json" hidden></label><p class="muted small">🔒 Les clés restent chiffrées sur ce téléphone. Sans ton mot de passe, elles sont inutilisables.</p><div class="card">'+TLI.html('Thousand Admin','btn block')+'</div></div>';return}
+  if(!KEYS){app.innerHTML='<div class="center">'+LOGO+'<h2>Thousand Admin</h2><p class="muted small">Accès réservé</p><form class="card" data-form="login"><label style="margin-top:0">Mot de passe</label><input type="password" name="p" required autocomplete="current-password"><button class="btn gold block">Entrer</button></form><div class="card">'+TLI.html('Thousand Admin','btn block')+'</div></div>';return}
   const A=APPS[cur],h=history_(),hc=h.filter(x=>x.app===cur),m=new Date().toISOString().slice(0,7);
   let html='<div class="wrap"><div class="top"><div class="brand">'+LOGO+'<div><b>Thousand Admin</b><small>Codes d\'activation · '+CONTACT_NAME+'</small></div></div><button class="btn sm" data-act="logout">🔒 Quitter</button></div>';
   html+='<div class="tabs">'+Object.entries(APPS).map(([k,a])=>'<button class="tab '+(k===cur?'on':'')+'" data-act="tab" data-k="'+k+'" style="'+(k===cur?'--app:'+a.color:'')+'">'+a.name+'<small>'+h.filter(x=>x.app===k).length+' code(s)</small></button>').join('')+'</div>';
@@ -214,7 +250,8 @@ function render(){
   const list=hc.filter(x=>!q||[x.client,x.id,x.note,x.phone].join(' ').toLowerCase().includes(q.toLowerCase()));
   html+='<div class="card"><div class="row"><b>🗂️ Historique '+A.name+'</b><button class="btn sm" data-act="csv">⬇️ CSV</button></div><input id="q" type="search" placeholder="Rechercher…" value="'+esc(q)+'" style="margin-top:10px">'+
     (list.length?list.slice(0,200).map(x=>'<div class="li"><div class="g"><b>'+esc(x.client||'Sans nom')+'</b><small>'+esc(showId(x.app,x.id))+' · '+new Date(x.at).toLocaleDateString('fr-FR')+(x.note?' · '+esc(x.note):'')+'</small></div><button class="btn sm" data-act="copy" data-t="'+esc(x.code)+'">📋</button><button class="btn sm danger" data-act="del" data-at="'+x.at+'" aria-label="Supprimer">✕</button></div>').join(''):'<p class="muted small">Aucun code pour l\'instant.</p>')+'</div>';
-  html+='<div class="card"><b>⚙️ Sécurité</b><form data-form="chpass"><label>Nouveau mot de passe</label><input type="password" name="p" minlength="6" required autocomplete="new-password"><button class="btn block">Changer le mot de passe</button></form><button class="btn block" data-act="backupVault">💾 Sauvegarder mes clés (fichier chiffré)</button><p class="muted small">Garde cette sauvegarde en lieu sûr (ex : envoyée à toi-même). Elle ne s\'ouvre qu\'avec ton mot de passe.</p></div></div>';
+  html+='<div class="card"><b>⚙️ Sécurité</b><form data-form="chpass"><label>Nouveau mot de passe</label><input type="password" name="p" minlength="6" required autocomplete="new-password"><button class="btn block">Changer le mot de passe</button></form><button class="btn block" data-act="backupVault">💾 Sauvegarder mes clés (fichier chiffré)</button><p class="muted small">Garde cette sauvegarde en lieu sûr (ex : envoyée à toi-même). Elle ne s\'ouvre qu\'avec ton mot de passe.</p></div>';
+  html+='<div class="card"><b>📲 Installer l\'application</b><div style="margin-top:10px">'+TLI.html('Thousand Admin','btn gold block')+'</div><p class="muted small">Garde le lien de Thousand Admin pour toi : il est réservé au vendeur et protégé par ton mot de passe.</p></div></div>';
   app.innerHTML=html;
 }
 

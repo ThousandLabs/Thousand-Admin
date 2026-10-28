@@ -38,8 +38,8 @@ input:focus,textarea:focus{border-color:var(--app)}
 .codebox{font:700 13px/1.5 ui-monospace,Menlo,monospace;word-break:break-all;color:var(--app);padding:12px 14px;border-radius:14px;background:var(--card2);border:1px dashed var(--app);margin-top:8px}
 .muted{color:var(--muted)}.small{font-size:13px}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
-.tab{padding:10px 6px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-weight:700;font-size:13px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+.tab{padding:10px 4px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-weight:700;font-size:12px}
 .tab small{display:block;font-weight:500;color:var(--muted);font-size:11px}
 .tab.on{border-color:var(--app);background:var(--card2);box-shadow:0 0 0 2px var(--app) inset}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
@@ -71,12 +71,12 @@ input:focus,textarea:focus{border-color:var(--app)}
 <script>
 'use strict';
 /* =========================================================
-   THOUSAND ADMIN — générateur de codes pour Nexus Track, Budget Flow et ScoreUp
+   THOUSAND ADMIN — générateur de codes pour Nexus Track, Budget Flow, ScoreUp et Power Log
    Les clés secrètes sont CHIFFRÉES par ton mot de passe : sans lui, ce fichier ne sert à rien.
    ========================================================= */
 const VAULT0 = {"v": 1, "iter": 210000, "salt": "CpUl3wugTs5nHdW5Z/+2/w==", "iv": "DswcvAhU+dV+ILPN", "ct": "2i6c8cktz8w5uyBkMmpPrKlYhwp/JHxh4r62lqKJW+Q8aYMo5xejOAzcJXySJ5Icx/6WYtaExRFfj0a32Lk0FpQ3Zpf34dWfi2yVZL43GtMFO6iXiMHdZ2z5CKYvMSVxcXYKtGhNHi1kXqIdNjpzcdQ2jR1l0MD5vI7ViZnFAhFKw3fH99scpQMloKfkTUHwUhHTWbsN92o1Q7gnQhPdz+m4ZF6L9P2lvrKbHCMpfQ6+3z/YOz1ikwN2RU2a8Y8VTMDB3R1nZ5W9LgcgKdYV/GiaMxGno8n8z3AXZSJpJjO+zso4WbwUpV/YmF0fCDpn2ukrYPewynrmsLbVoih6SnN4QZcgryUmj161RMcy/ReKjp6OPpx8Gb62cicZa6lCkqRVWv8rsRvSS/ml/6S2ForUHWZUSzq7kOt6NPMQxR55WmzFtuGoQh1B2Bko7x97gUdMyTOj52o5+MtfW1Ola/R2GC33z8d/foKevVHlfVNojvtpMOoe6dXem5/gLlNajkfn6A=="};          // clés de départ, chiffrées avec le mot de passe de départ
 const EXTRA = {scoreup:{"v": 1, "iter": 210000, "salt": "L5wQ21bdxD7ZRnIYCDLpjA==", "iv": "J/Cw51w8BjDsizHG", "ct": "mJxcMg4o8L3/XABK8LZ0atQauPIJ2cvkKCjpMZ7uyU+Cxy+ckpl4Q4nhonE+4LDN7CxzU6Zcbe1cCEQDtp9Q7eO5cpepXBfiTi9AL5XZCV1FQvUJGIgPgRrtsI1GynPSiaERTR3XdRb3WhbD+Vn3lFFs7QmBPa1biZ9RpIrJiu+WQnLsVpPnLYXWUGg2SU9heI410luMgWk/jtCR7bIKzi7jmKyNeQ1V3mPw/9fQCqF3XIijsJ7Q87S1TchtKsA7tkPn37k3uxcUsA8Z"}};   // clé ScoreUp v2, chiffrée avec le mot de passe de départ
-const PUB = {"nexus": {"kty": "EC", "crv": "P-256", "x": "Ve64rRTv47enrEMEcO9AU6c6EXu2aw0nAcFtZgerGN0", "y": "vxLMFjXKqS6IgmdNpRH_AjQmy0Z0fWpscSJAj0Qlg_Q"}, "budget": {"kty": "EC", "crv": "P-256", "x": "pcF7mT3FVUz-KyYrnAS_KaplrCOu1NVeIPZrFN8MfiM", "y": "PCDYshME04Lczd0f_C6neNBZR0G7Canh4ROT-7hjhCs"}, "scoreup": {"kty": "EC", "crv": "P-256", "x": "SHoZAs_cwa82xgMOI6zzDtzeSulWF-mLTZnPy-bHAS0", "y": "KzNwMXGq_Sx00QFmaXRgNcGdcS-GmcK8i0akGx6WDh8"}};               // clés publiques (pour vérifier)
+const PUB = {"nexus": {"kty": "EC", "crv": "P-256", "x": "Ve64rRTv47enrEMEcO9AU6c6EXu2aw0nAcFtZgerGN0", "y": "vxLMFjXKqS6IgmdNpRH_AjQmy0Z0fWpscSJAj0Qlg_Q"}, "budget": {"kty": "EC", "crv": "P-256", "x": "pcF7mT3FVUz-KyYrnAS_KaplrCOu1NVeIPZrFN8MfiM", "y": "PCDYshME04Lczd0f_C6neNBZR0G7Canh4ROT-7hjhCs"}, "scoreup": {"kty": "EC", "crv": "P-256", "x": "SHoZAs_cwa82xgMOI6zzDtzeSulWF-mLTZnPy-bHAS0", "y": "KzNwMXGq_Sx00QFmaXRgNcGdcS-GmcK8i0akGx6WDh8"}, "power": {"kty": "EC", "crv": "P-256", "x": "Nmq3G5g-Kt2bKI9uLLDtm_mXb_4zFb_M4VEt1gLSaas", "y": "c4jgrKhZ0yxPbji5teUScN7R-BewApsW0C982UQ3ymw"}};               // clés publiques (pour vérifier)
 const CONTACT_NAME = 'Thousand Labs';
 const VKEY='tla_vault', HKEY='tla_history', AKEY='tla_app';
 const AL_NX='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', AL_BF='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -91,7 +91,10 @@ const APPS={
   scoreup:{name:'ScoreUp',short:'ScoreUp',color:'#6f8cff',idPh:'XXXX-XXXX-XXXX-XXXX-XXXX-XXXX',qid:'SUID:',qcode:'SUCODE:',
     norm(v){const x=String(v||'').toLowerCase().replace(/[^0-9a-f]/g,'');return x.length===24?x:null},
     show:id=>id.toUpperCase().replace(/(.{4})(?=.)/g,'$1-'),
-    hint:'Le client touche « 🔳 Afficher en QR » sous son identifiant.',scanHint:'Le client touche « 📷 Scanner le code ».'}
+    hint:'Le client touche « 🔳 Afficher en QR » sous son identifiant.',scanHint:'Le client touche « 📷 Scanner le code ».'},
+  power:{name:'Power Log',short:'Power',color:'#fb923c',idPh:'PL-XXXX-XXXX',qid:'PLID:',qcode:'PLCODE:',
+    norm(v){let x=up(v).replace(/[^A-Z0-9]/g,'');if(x.startsWith('PL'))x=x.slice(2);return x.length===8&&[...x].every(c=>AL_BF.includes(c))?'PL-'+x.slice(0,4)+'-'+x.slice(4):null},
+    hint:'Le client touche « 🔳 QR » sous son code appareil.',scanHint:'Le client touche « 📷 Scanner le code du vendeur ».'}
 };
 const showId=(app,id)=>APPS[app].show?APPS[app].show(id):id;
 
@@ -198,7 +201,7 @@ function render(){
   const A=APPS[cur],h=history_(),hc=h.filter(x=>x.app===cur),m=new Date().toISOString().slice(0,7);
   let html='<div class="wrap"><div class="top"><div class="brand">'+LOGO+'<div><b>Thousand Admin</b><small>Codes d\'activation · '+CONTACT_NAME+'</small></div></div><button class="btn sm" data-act="logout">🔒 Quitter</button></div>';
   html+='<div class="tabs">'+Object.entries(APPS).map(([k,a])=>'<button class="tab '+(k===cur?'on':'')+'" data-act="tab" data-k="'+k+'" style="'+(k===cur?'--app:'+a.color:'')+'">'+a.name+'<small>'+h.filter(x=>x.app===k).length+' code(s)</small></button>').join('')+'</div>';
-  html+='<div class="stats"><div><b>'+hc.length+'</b><small>codes '+A.short+'</small></div><div><b>'+hc.filter(x=>new Date(x.at).toISOString().slice(0,7)===m).length+'</b><small>ce mois</small></div><div><b>'+h.length+'</b><small>tous les apps</small></div></div>';
+  html+='<div class="stats"><div><b>'+hc.length+'</b><small>codes '+A.short+'</small></div><div><b>'+hc.filter(x=>new Date(x.at).toISOString().slice(0,7)===m).length+'</b><small>ce mois</small></div><div><b>'+h.length+'</b><small>toutes les applis</small></div></div>';
   if(!KEYS[cur]&&EXTRA[cur]){
     html+='<form class="card" data-form="extra"><b>🔑 Activer la clé '+A.name+'</b><p class="muted small">Une seule fois : tape le <b>mot de passe de départ</b> (celui qui commence par TL-) pour ajouter la clé '+A.name+' à ton coffre.</p><input type="password" name="p0" required autocomplete="off" placeholder="TL-…"><button class="btn gold block">Activer</button></form>';
   }else if(!KEYS[cur]){

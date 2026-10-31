@@ -114,6 +114,8 @@ const PUB = {"nexus": {"kty": "EC", "crv": "P-256", "x": "sYHmmM-g8g18TlWU2le4nJ
 /* Anciennes clés publiques : leurs clés secrètes étaient publiées (chiffrées) dans ce dépôt.
    Elles sont retirées : Thousand Admin propose d'en créer de nouvelles, générées sur le téléphone. */
 const RETIRED = ['Ve64rRTv47enrEMEcO9AU6c6EXu2aw0nAcFtZgerGN0','pcF7mT3FVUz-KyYrnAS_KaplrCOu1NVeIPZrFN8MfiM','SHoZAs_cwa82xgMOI6zzDtzeSulWF-mLTZnPy-bHAS0','a1NMDteN4-mIzN5bW7y_DveTs1pUcG4DKYhSFFtrisE','Nmq3G5g-Kt2bKI9uLLDtm_mXb_4zFb_M4VEt1gLSaas'];
+/* Empreintes des 5 codes donnés à l'équipe avec les anciennes clés : les applis les acceptent toujours. */
+const LEGACY={"nexus": ["f9a5864ccab0dc74f2fdd59c82ae1b394a8ec23a5497d5650f62364e1c951272", "34c465820e88187025156ecb13788c43d1f479356041ead86b14d3a84d1f81b9"], "budget": ["da5009a927d524cae80e2e497dd01e4bdcc83c0b77e484b45d9a4a4745cd2097", "24fd0c572e46f53fc008d10aeccf1bf77dd9a8340b4463854aadf4a1229c2827"], "scoreup": ["3af0ab4058593744c1fadcc3a77ad6d4693ba85e9e2e2d30b86378bf7f2e02d2"]};
 const CONTACT_NAME = 'Thousand Labs';
 const VKEY='tla_vault', HKEY='tla_history', AKEY='tla_app', BKEY='tla_backup_at', KCKEY='tla_keys_at';
 const AL_NX='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', AL_BF='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -331,7 +333,9 @@ const FORMS={
     last={app,client,phone,items,warn:warn.join(' ')};render();
     toast(n>1?n+' codes générés ✅':'Code généré ✅')},
   check:async fd=>{const id=APPS[cur].norm(fd.get('id')),r=$('#checkRes');if(!id){r.innerHTML='<span class="bad">❌ Identifiant invalide</span>';return}
-    const c=String(fd.get('code')).replace(/\s+/g,'').replace(/^[A-Z]+CODE:/,'');r.innerHTML=(await verify(cur,id,c))?'<span class="ok">✅ Code valide pour cet appareil</span>':'<span class="bad">❌ Code invalide pour cet appareil</span>'},
+    const c=String(fd.get('code')).replace(/\s+/g,'').replace(/^[A-Z]+CODE:/,'');if(await verify(cur,id,c)){r.innerHTML='<span class="ok">✅ Code valide pour cet appareil</span>';return}
+    const hx=Array.from(new Uint8Array(await S.digest('SHA-256',enc(id+':'+c))),b=>b.toString(16).padStart(2,'0')).join('');
+    r.innerHTML=(LEGACY[cur]||[]).includes(hx)?'<span class="ok">✅ Ancien code de l\'équipe : toujours valable sur cet appareil</span>':'<span class="bad">❌ Code invalide pour cet appareil</span>'},
   chpass:async fd=>{const p=String(fd.get('p'));if(p.length<10){toast('10 caractères minimum');return}PASS=p;await saveKeys();toast('Mot de passe changé ✅ — refais une sauvegarde');render()}
 };
 const ACT={

@@ -1,5 +1,5 @@
 /* Thousand Admin — service worker : appli disponible hors ligne, mises à jour automatiques */
-const CACHE = 'thousand-admin-v2.8';
+const CACHE = 'thousand-admin-v2.9';
 const PREFIX = 'thousand-admin-v'; /* les applis Thousand Labs partagent le même domaine : on ne touche qu'à NOS caches */
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png?v=3', './icon-512.png?v=3', './apple-touch-icon.png?v=3'];
 const OFFLINE = () => new Response(

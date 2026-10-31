@@ -9,8 +9,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Thousand Admin">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
+<link rel="icon" href="icon-192.png?v=3">
 <title>Thousand Admin</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -134,6 +134,28 @@ const APPS={
 };
 const showId=(app,id)=>APPS[app].show?APPS[app].show(id):id;
 
+/* ---------- lecture d'un message WhatsApp collé ----------
+   On ne garde que ce qui ressemble à un identifiant de l'appli (NX-…, BF-…, PL-…,
+   ou 24 caractères hexadécimaux pour ScoreUp) ; tout le reste du message est ignoré.
+   strict=true : pas d'essai « identifiant tapé sans préfixe ». */
+const ID_PREFIX={nexus:'NX',budget:'BF',power:'PL'};
+function findIds(app,text,strict){const A=APPS[app],t=String(text||''),ids=[],bad=[];
+  const add=v=>{const id=A.norm(v);if(id&&!ids.includes(id))ids.push(id);return id};
+  if(app==='scoreup'){(t.match(/[0-9a-f]{4}(?:[\s-]?[0-9a-f]{4}){5}/gi)||[]).forEach(add)}
+  else{const re=new RegExp('\\b'+ID_PREFIX[app]+'[\\s:_-]*([A-Za-z0-9]{4})[\\s_-]*([A-Za-z0-9]{4})(?![A-Za-z0-9])','gi');let m;
+    while((m=re.exec(t)))if(!add(m[1]+m[2])&&!bad.includes(m[0].toUpperCase()))bad.push(m[0].toUpperCase())}
+  if(!ids.length&&!bad.length&&!strict)add(t);
+  return {ids,bad}}
+/* Autres applis présentes dans le message (si l'onglet ouvert n'est pas le bon) */
+const otherApps=text=>Object.keys(APPS).filter(k=>k!==cur&&findIds(k,text,true).ids.length);
+/* Infos du message d'achat envoyé par les applis : numéro qui a payé, pack, moyen de paiement, nom */
+function parseMsg(text){const t=String(text||''),r={};
+  let m=t.match(/depuis le\s*(\+?\d[\d .]{6,}\d)/i);if(m)r.phone=m[1].replace(/\s+/g,' ').trim();
+  m=t.match(/—\s*(\d+)\s+(?:personnes?|appareils?)\s*(\([^)]*\))?/i);if(m){r.pack=+m[1];r.packTxt='pack '+m[1]+(m[2]?' '+m[2].replace(/\s+/g,' '):'')}
+  m=t.match(/Paiement\s*:\s*(?:en\s+)?([^\n]+?)(?:\s+depuis\b|\.?\s*$)/im);if(m)r.pay=m[1].replace(/[.,]\s*$/,'').trim();
+  m=t.match(/^\s*\[[^\]\n]+\]\s*([^:\n]{2,40}):/m);if(m)r.name=m[1].trim();
+  r.note=[r.packTxt,r.pay].filter(Boolean).join(', ');return r}
+
 /* ---------- crypto ---------- */
 const S=crypto.subtle,enc=s=>new TextEncoder().encode(s);
 const b64=u=>{let s='';u=new Uint8Array(u);for(let i=0;i<u.length;i++)s+=String.fromCharCode(u[i]);return btoa(s)};
@@ -243,8 +265,14 @@ function render(){
   }else if(!KEYS[cur]){
     html+='<div class="card"><b>🔑 Importer ta clé '+A.name+'</b><p class="muted small">Pour générer des codes '+A.name+' ici, ouvre le fichier de ton ancien générateur '+A.name+' ci-dessous : la clé est trouvée et vérifiée automatiquement, puis chiffrée avec ton mot de passe.</p><label class="btn gold block">📂 Choisir l\'ancien générateur (.html)<input type="file" data-file="oldgen" accept=".html,.htm,.txt,.json,text/html" hidden></label><label>…ou colle ici sa clé (JSON avec « d »)</label><textarea id="keyPaste" placeholder=\'{"kty":"EC","crv":"P-256","d":"…"}\'></textarea><button class="btn block" data-act="importPaste">Importer la clé collée</button></div>';
   }else{
-    html+='<form class="card" data-form="gen"><b>🔑 Générer un code '+A.name+'</b><label>Identifiant de l\'appareil</label><input name="id" class="mono" required placeholder="'+A.idPh+'" autocomplete="off" spellcheck="false"><button type="button" class="btn block" data-act="scanId" style="margin-top:8px">📷 Scanner l\'identifiant du client</button><div class="row" style="gap:10px"><div style="flex:1"><label>Nom du client</label><input name="client" maxlength="40" placeholder="Ex : Awa Diop"></div><div style="flex:1"><label>WhatsApp</label><input name="phone" type="tel" inputmode="tel" maxlength="20" placeholder="77 123 45 67"></div></div><label>Note (pack, prix…)</label><input name="note" maxlength="80" placeholder="Ex : pack 5, payé Wave"><button class="btn pri block">Générer le code</button></form>';
-    if(last&&last.app===cur)html+='<div class="card"><div class="row"><b>✅ Code pour '+esc(last.client||showId(cur,last.id))+'</b><span class="tag">'+A.name+'</span></div><div class="codebox">'+esc(last.code)+'</div>'+(last.dup?'<p class="small muted">ℹ️ Cet appareil avait déjà reçu un code le '+new Date(last.dup).toLocaleDateString('fr-FR')+'.</p>':'')+'<div class="btns"><button class="btn" data-act="copy" data-t="'+esc(last.code)+'">📋 Copier</button><button class="btn" data-act="showCodeQR">🔳 QR</button><button class="btn pri" data-act="sendWa">💬 WhatsApp</button></div></div>';
+    html+='<form class="card" data-form="gen"><b>🔑 Générer un code '+A.name+'</b><label>Message WhatsApp du client ou identifiant(s)</label><textarea name="id" id="idIn" required rows="4" style="font:14px/1.45 system-ui,sans-serif" placeholder="Colle ici le message WhatsApp du client, même avec plusieurs identifiants. Ou tape l\'identifiant : '+A.idPh+'" autocomplete="off" spellcheck="false"></textarea><p id="idFound" class="small muted" style="margin:6px 0 0">Seuls les identifiants '+A.name+' sont gardés : le reste du message est ignoré.</p><button type="button" class="btn block" data-act="scanId" style="margin-top:8px">📷 Scanner l\'identifiant du client</button><div class="row" style="gap:10px"><div style="flex:1"><label>Nom du client</label><input name="client" maxlength="40" placeholder="Ex : Awa Diop"></div><div style="flex:1"><label>WhatsApp</label><input name="phone" type="tel" inputmode="tel" maxlength="20" placeholder="77 123 45 67"></div></div><label>Note (pack, prix…)</label><input name="note" maxlength="80" placeholder="Ex : pack 5, payé Wave"><button class="btn pri block">Générer le(s) code(s)</button></form>';
+    if(last&&last.app===cur){const n=last.items.length;
+      html+='<div class="card"><div class="row"><b>✅ '+(n>1?n+' codes générés'+(last.client?' · '+esc(last.client):''):'Code pour '+esc(last.client||showId(cur,last.items[0].id)))+'</b><span class="tag">'+A.name+'</span></div>'+
+        last.items.map((it,i)=>(n>1?'<p class="small" style="margin:14px 0 0"><b>'+(i+1)+'.</b> <span class="mono">'+esc(showId(cur,it.id))+'</span></p>':'')+'<div class="codebox">'+esc(it.code)+'</div>'+
+          (it.dup?'<p class="small muted">ℹ️ Cet appareil avait déjà reçu un code le '+new Date(it.dup).toLocaleDateString('fr-FR')+'.</p>':'')+
+          '<div class="btns" style="margin-top:8px"><button class="btn sm" data-act="copy" data-t="'+esc(it.code)+'">📋 Copier</button><button class="btn sm" data-act="showCodeQR" data-i="'+i+'">🔳 QR</button></div>').join('')+
+        (last.warn?'<p class="small" style="color:var(--pri);margin-top:12px">⚠️ '+esc(last.warn)+'</p>':'')+
+        '<div class="btns"><button class="btn" data-act="copyMsg">📋 Copier le message</button><button class="btn pri" data-act="sendWa">💬 WhatsApp</button></div>'+(n>1?'<p class="muted small">Le message contient tous les codes, chacun avec l\'identifiant du téléphone auquel il correspond.</p>':'')+'</div>'}
     html+='<form class="card" data-form="check"><b>🔍 Vérifier un code '+A.name+'</b><label>Identifiant</label><input name="id" class="mono" required placeholder="'+A.idPh+'"><label>Code</label><textarea name="code" required></textarea><button class="btn block">Vérifier</button><p id="checkRes" class="small"></p></form>';
   }
   const list=hc.filter(x=>!q||[x.client,x.id,x.note,x.phone].join(' ').toLowerCase().includes(q.toLowerCase()));
@@ -265,6 +293,20 @@ async function importKey(text){
   catch(e){toast('❌ Cette clé ne correspond pas à '+APPS[cur].name);return}
   KEYS[cur]=jwk;lsSet(VKEY,JSON.stringify(await sealVault(KEYS,PASS)));render();toast('✅ Clé '+APPS[cur].name+' importée et chiffrée')}
 
+function waText(){const A=APPS[last.app],its=last.items,hi='Bonjour'+(last.client?' '+last.client:'')+' 👋\n\n';
+  if(its.length===1)return hi+'Voici ton code d\'activation *'+A.name+'* (à copier en entier) :\n\n'+its[0].code+'\n\nIl fonctionne uniquement sur ton téléphone. Bienvenue ! 🚀';
+  return hi+'Voici vos '+its.length+' codes d\'activation *'+A.name+'*. Chaque code marche uniquement sur le téléphone dont l\'identifiant est indiqué (copiez-le en entier) :\n\n'+
+    its.map((it,i)=>(i+1)+'. Téléphone '+showId(last.app,it.id)+' :\n'+it.code).join('\n\n')+'\n\nBienvenue ! 🚀'}
+/* Pendant qu'on colle / tape : identifiants trouvés + remplissage auto du numéro et de la note */
+function liveIds(){const el=$('#idIn'),out=$('#idFound');if(!el||!out)return;const v=el.value,A=APPS[cur];
+  if(!v.trim()){out.className='small muted';out.textContent='Seuls les identifiants '+A.name+' sont gardés : le reste du message est ignoré.';return}
+  const r=findIds(cur,v);let h;
+  if(r.ids.length)h='<span class="ok">🔎 '+r.ids.length+' identifiant'+(r.ids.length>1?'s':'')+' trouvé'+(r.ids.length>1?'s':'')+' :</span> <span class="mono">'+r.ids.map(id=>esc(showId(cur,id))).join(', ')+'</span>';
+  else{const o=otherApps(v);h=o.length===1?'↪️ Identifiant '+APPS[o[0]].name+' détecté : l\'onglet '+APPS[o[0]].name+' sera ouvert automatiquement.':'<span class="bad">Aucun identifiant '+A.name+' reconnu pour l\'instant.</span>'}
+  if(r.bad.length)h+='<br><span class="bad">⚠️ Illisible : '+r.bad.map(esc).join(', ')+'</span>';
+  out.className='small';out.innerHTML=h;
+  const info=parseMsg(v),f=el.form;if(!f)return;
+  [['phone',info.phone],['note',info.note],['client',info.name]].forEach(([k,val])=>{const i=f.elements[k];if(i&&val&&!i.value)i.value=val})}
 const FORMS={
   setup:async fd=>{const p0=String(fd.get('p0')).trim(),a=fd.get('p1'),b=fd.get('p2');if(a!==b){toast('Les deux mots de passe sont différents');return}
     toast('Déverrouillage…');let keys;try{keys=await openVault(VAULT0,p0)}catch(e){toast('❌ Mot de passe de départ incorrect');return}
@@ -272,10 +314,22 @@ const FORMS={
   login:async fd=>{const p=fd.get('p');toast('Vérification…');try{KEYS=await openVault(localVault(),p);PASS=p;render()}catch(e){toast('❌ Mot de passe incorrect')}},
   extra:async fd=>{toast('Déverrouillage…');let k;try{k=await openVault(EXTRA[cur],String(fd.get('p0')).trim())}catch(e){toast('❌ Mot de passe de départ incorrect');return}
     Object.assign(KEYS,k);lsSet(VKEY,JSON.stringify(await sealVault(KEYS,PASS)));render();toast('✅ Clé '+APPS[cur].name+' activée')},
-  gen:async fd=>{const id=APPS[cur].norm(fd.get('id'));if(!id){toast('❌ Identifiant invalide (format '+APPS[cur].idPh+')');return}
-    const code=await sign(cur,id),h=history_(),prev=h.find(x=>x.app===cur&&x.id===id);
-    const rec={at:Date.now(),app:cur,id,code,client:String(fd.get('client')||'').trim(),phone:String(fd.get('phone')||'').trim(),note:String(fd.get('note')||'').trim()};
-    h.unshift(rec);saveHistory(h);last=Object.assign({dup:prev?prev.at:0},rec);render();toast('Code généré ✅')},
+  gen:async fd=>{const text=String(fd.get('id')||'');let app=cur,r=findIds(cur,text);
+    if(!r.ids.length){const o=otherApps(text);if(o.length===1){app=o[0];cur=app;lsSet(AKEY,cur);q='';
+      if(!KEYS[app]){last=null;render();toast('Ce message concerne '+APPS[app].name+' : active d\'abord sa clé');return}r=findIds(app,text)}}
+    const A=APPS[app];
+    if(!r.ids.length){toast(r.bad.length?'❌ Identifiant illisible : '+r.bad[0]+' (demande-le à nouveau)':'❌ Aucun identifiant '+A.name+' trouvé (format '+A.idPh+')');return}
+    const info=parseMsg(text),n=r.ids.length;
+    const client=String(fd.get('client')||'').trim()||info.name||'',phone=String(fd.get('phone')||'').trim()||info.phone||'',note=String(fd.get('note')||'').trim()||info.note||'';
+    const h=history_(),items=[],now=Date.now();
+    for(let i=0;i<n;i++){const id=r.ids[i],code=await sign(app,id),prev=h.find(x=>x.app===app&&x.id===id);
+      items.push({id,code,dup:prev?prev.at:0});
+      h.unshift({at:now+i,app,id,code,client,phone,note:note+(n>1?(note?' · ':'')+(i+1)+'/'+n:'')})}
+    saveHistory(h);
+    const warn=[];if(info.pack&&info.pack!==n)warn.push('Pack de '+info.pack+' annoncé, '+n+' identifiant'+(n>1?'s':'')+' trouvé'+(n>1?'s':'')+'.');
+    if(r.bad.length)warn.push('Illisible'+(r.bad.length>1?'s':'')+', à redemander : '+r.bad.join(', ')+'.');
+    last={app,client,phone,items,warn:warn.join(' ')};render();
+    toast(n>1?n+' codes générés ✅':'Code généré ✅')},
   check:async fd=>{const id=APPS[cur].norm(fd.get('id')),r=$('#checkRes');if(!id){r.innerHTML='<span class="bad">❌ Identifiant invalide</span>';return}
     const c=String(fd.get('code')).replace(/\s+/g,'').replace(/^[A-Z]+CODE:/,'');r.innerHTML=(await verify(cur,id,c))?'<span class="ok">✅ Code valide pour cet appareil</span>':'<span class="bad">❌ Code invalide pour cet appareil</span>'},
   chpass:async fd=>{PASS=fd.get('p');lsSet(VKEY,JSON.stringify(await sealVault(KEYS,PASS)));toast('Mot de passe changé ✅');render()}
@@ -288,9 +342,10 @@ const ACT={
   importPaste:()=>importKey($('#keyPaste').value),
   scanId:()=>{const A=APPS[cur];openSheet('<div class="row"><b>📷 Scanner l\'identifiant</b><button class="btn sm" data-act="closeSheet">✕</button></div><p class="muted small cm">'+A.hint+'</p><div class="scanbox"><video id="scanV"></video><i></i></div><p id="scanS" class="small cm">Ouverture de la caméra…</p>');
     startScan($('#scanV'),$('#scanS'),t=>{t=String(t).trim();let id=null;for(const [k,a] of Object.entries(APPS)){if(t.startsWith(a.qid)){if(k!==cur){$('#scanS').textContent='⚠️ Ce QR est pour '+a.name+', pas '+A.name;return}id=A.norm(t.slice(a.qid.length))}}
-      if(!id)id=A.norm(t);if(id){closeSheet();const i=document.querySelector('form[data-form=gen] [name=id]');if(i)i.value=showId(cur,id);try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}toast('Identifiant scanné ✅')}})},
-  showCodeQR:()=>{if(!last)return;const A=APPS[cur];openSheet('<div class="row"><b>🔳 Code de '+esc(last.client||showId(cur,last.id))+'</b><button class="btn sm" data-act="closeSheet">✕</button></div><p class="muted small cm">'+A.scanHint+' L\'appli s\'active toute seule.</p><div id="qrBox"></div>');$('#qrBox').appendChild(QR.canvas(A.qcode+last.code,640,'M'))},
-  sendWa:()=>{if(!last)return;const A=APPS[last.app];const txt='Bonjour'+(last.client?' '+last.client:'')+' 👋\n\nVoici ton code d\'activation *'+A.name+'* (à copier en entier) :\n\n'+last.code+'\n\nIl fonctionne uniquement sur ton téléphone. Bienvenue ! 🚀';
+      if(!id)id=A.norm(t);if(id){closeSheet();const i=document.querySelector('form[data-form=gen] [name=id]');if(i){const sv=showId(cur,id);if(!i.value.includes(sv))i.value=(i.value.trim()?i.value.trim()+'\n':'')+sv;liveIds()}try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}toast('Identifiant scanné ✅')}})},
+  showCodeQR:t=>{if(!last)return;const A=APPS[cur],it=last.items[+t.dataset.i||0];if(!it)return;openSheet('<div class="row"><b>🔳 Code de '+esc(last.items.length>1?showId(cur,it.id):(last.client||showId(cur,it.id)))+'</b><button class="btn sm" data-act="closeSheet">✕</button></div><p class="muted small cm">'+A.scanHint+' L\'appli s\'active toute seule.</p><div id="qrBox"></div>');$('#qrBox').appendChild(QR.canvas(A.qcode+it.code,640,'M'))},
+  copyMsg:()=>{if(last)copyText(waText())},
+  sendWa:()=>{if(!last)return;const txt=waText();
     window.open(last.phone?'https://wa.me/'+waPhone(last.phone)+'?text='+encodeURIComponent(txt):'https://wa.me/?text='+encodeURIComponent(txt),'_blank')},
   del:t=>{if(!confirm('Retirer ce code de l\'historique ? (Il reste valable sur le téléphone du client.)'))return;saveHistory(history_().filter(x=>String(x.at)!==t.dataset.at));render()},
   csv:()=>{const h=history_();const rows=[['Date','Appli','Client','WhatsApp','Identifiant','Note','Code']].concat(h.map(x=>[new Date(x.at).toLocaleString('fr-FR'),APPS[x.app]?APPS[x.app].name:x.app,x.client,x.phone,showId(x.app,x.id),x.note,x.code]));
@@ -301,7 +356,7 @@ const ACT={
 document.addEventListener('submit',e=>{const f=e.target;if(!f.dataset.form)return;e.preventDefault();FORMS[f.dataset.form]&&FORMS[f.dataset.form](new FormData(f),f)});
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(t&&ACT[t.dataset.act]){e.preventDefault();ACT[t.dataset.act](t)}});
 $('#ov').addEventListener('click',e=>{if(e.target.id==='ov')closeSheet()});
-document.addEventListener('input',e=>{if(e.target.id==='q'){q=e.target.value;const pos=e.target.selectionStart;render();const n=$('#q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}});
+document.addEventListener('input',e=>{if(e.target.id==='idIn'){liveIds();return}if(e.target.id==='q'){q=e.target.value;const pos=e.target.selectionStart;render();const n=$('#q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}});
 document.addEventListener('change',async e=>{const t=e.target;if(!t.dataset.file||!t.files||!t.files[0])return;const txt=await t.files[0].text();t.value='';
   if(t.dataset.file==='oldgen')importKey(txt);
   if(t.dataset.file==='vault'){try{const o=JSON.parse(txt);if(o.app!=='thousand-admin-vault'||!o.vault)throw 0;lsSet(VKEY,JSON.stringify(o.vault));render();toast('✅ Clés restaurées : entre le mot de passe de cette sauvegarde')}catch(_){toast('❌ Fichier de sauvegarde invalide')}}});

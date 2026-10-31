@@ -108,13 +108,14 @@ var TLI=(function(){
 })();
 /* =========================================================
    THOUSAND ADMIN — générateur de codes pour Nexus Track, Budget Flow, ScoreUp et Power Log
-   Les clés secrètes sont CHIFFRÉES par ton mot de passe : sans lui, ce fichier ne sert à rien.
+   Ce fichier ne contient AUCUNE clé secrète : elles sont créées sur ton téléphone et chiffrées par ton mot de passe.
    ========================================================= */
-const VAULT0 = {"v": 1, "iter": 210000, "salt": "CpUl3wugTs5nHdW5Z/+2/w==", "iv": "DswcvAhU+dV+ILPN", "ct": "2i6c8cktz8w5uyBkMmpPrKlYhwp/JHxh4r62lqKJW+Q8aYMo5xejOAzcJXySJ5Icx/6WYtaExRFfj0a32Lk0FpQ3Zpf34dWfi2yVZL43GtMFO6iXiMHdZ2z5CKYvMSVxcXYKtGhNHi1kXqIdNjpzcdQ2jR1l0MD5vI7ViZnFAhFKw3fH99scpQMloKfkTUHwUhHTWbsN92o1Q7gnQhPdz+m4ZF6L9P2lvrKbHCMpfQ6+3z/YOz1ikwN2RU2a8Y8VTMDB3R1nZ5W9LgcgKdYV/GiaMxGno8n8z3AXZSJpJjO+zso4WbwUpV/YmF0fCDpn2ukrYPewynrmsLbVoih6SnN4QZcgryUmj161RMcy/ReKjp6OPpx8Gb62cicZa6lCkqRVWv8rsRvSS/ml/6S2ForUHWZUSzq7kOt6NPMQxR55WmzFtuGoQh1B2Bko7x97gUdMyTOj52o5+MtfW1Ola/R2GC33z8d/foKevVHlfVNojvtpMOoe6dXem5/gLlNajkfn6A=="};          // clés de départ, chiffrées avec le mot de passe de départ
-const EXTRA = {scoreup:{"v": 1, "iter": 210000, "salt": "L5wQ21bdxD7ZRnIYCDLpjA==", "iv": "J/Cw51w8BjDsizHG", "ct": "mJxcMg4o8L3/XABK8LZ0atQauPIJ2cvkKCjpMZ7uyU+Cxy+ckpl4Q4nhonE+4LDN7CxzU6Zcbe1cCEQDtp9Q7eO5cpepXBfiTi9AL5XZCV1FQvUJGIgPgRrtsI1GynPSiaERTR3XdRb3WhbD+Vn3lFFs7QmBPa1biZ9RpIrJiu+WQnLsVpPnLYXWUGg2SU9heI410luMgWk/jtCR7bIKzi7jmKyNeQ1V3mPw/9fQCqF3XIijsJ7Q87S1TchtKsA7tkPn37k3uxcUsA8Z"}};   // clé ScoreUp v2, chiffrée avec le mot de passe de départ
 const PUB = {"nexus": {"kty": "EC", "crv": "P-256", "x": "Ve64rRTv47enrEMEcO9AU6c6EXu2aw0nAcFtZgerGN0", "y": "vxLMFjXKqS6IgmdNpRH_AjQmy0Z0fWpscSJAj0Qlg_Q"}, "budget": {"kty": "EC", "crv": "P-256", "x": "pcF7mT3FVUz-KyYrnAS_KaplrCOu1NVeIPZrFN8MfiM", "y": "PCDYshME04Lczd0f_C6neNBZR0G7Canh4ROT-7hjhCs"}, "scoreup": {"kty": "EC", "crv": "P-256", "x": "SHoZAs_cwa82xgMOI6zzDtzeSulWF-mLTZnPy-bHAS0", "y": "KzNwMXGq_Sx00QFmaXRgNcGdcS-GmcK8i0akGx6WDh8"}, "power": {"kty": "EC", "crv": "P-256", "x": "Nmq3G5g-Kt2bKI9uLLDtm_mXb_4zFb_M4VEt1gLSaas", "y": "c4jgrKhZ0yxPbji5teUScN7R-BewApsW0C982UQ3ymw"}};               // clés publiques (pour vérifier)
+/* Anciennes clés publiques : leurs clés secrètes étaient publiées (chiffrées) dans ce dépôt.
+   Elles sont retirées : Thousand Admin propose d'en créer de nouvelles, générées sur le téléphone. */
+const RETIRED = ['Ve64rRTv47enrEMEcO9AU6c6EXu2aw0nAcFtZgerGN0','pcF7mT3FVUz-KyYrnAS_KaplrCOu1NVeIPZrFN8MfiM','SHoZAs_cwa82xgMOI6zzDtzeSulWF-mLTZnPy-bHAS0','a1NMDteN4-mIzN5bW7y_DveTs1pUcG4DKYhSFFtrisE','Nmq3G5g-Kt2bKI9uLLDtm_mXb_4zFb_M4VEt1gLSaas'];
 const CONTACT_NAME = 'Thousand Labs';
-const VKEY='tla_vault', HKEY='tla_history', AKEY='tla_app';
+const VKEY='tla_vault', HKEY='tla_history', AKEY='tla_app', BKEY='tla_backup_at', KCKEY='tla_keys_at';
 const AL_NX='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', AL_BF='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const up=v=>String(v||'').toUpperCase();
 const APPS={
@@ -166,7 +167,14 @@ async function aesKey(pass,salt,iter,use){const base=await S.importKey('raw',enc
 async function openVault(v,pass){const k=await aesKey(pass,unb64(v.salt),v.iter,'decrypt');const pt=await S.decrypt({name:'AES-GCM',iv:unb64(v.iv)},k,unb64(v.ct));return JSON.parse(new TextDecoder().decode(pt))}
 async function sealVault(keys,pass){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),iter=210000;const k=await aesKey(pass,salt,iter,'encrypt');const ct=await S.encrypt({name:'AES-GCM',iv},k,enc(JSON.stringify(keys)));return {v:1,iter,salt:b64(salt),iv:b64(iv),ct:b64(ct)}}
 async function sign(app,id){const k=await S.importKey('jwk',KEYS[app],{name:'ECDSA',namedCurve:'P-256'},false,['sign']);return b64u(await S.sign({name:'ECDSA',hash:'SHA-256'},k,enc(id)))}
-async function verify(app,id,code){try{const k=await S.importKey('jwk',PUB[app],{name:'ECDSA',namedCurve:'P-256'},false,['verify']);return await S.verify({name:'ECDSA',hash:'SHA-256'},k,unb64u(code),enc(id))}catch(e){return false}}
+const pubOf=app=>KEYS&&KEYS[app]?{kty:'EC',crv:'P-256',x:KEYS[app].x,y:KEYS[app].y}:PUB[app];
+/* État de la clé : none (aucune), ok (installée dans l'appli), pending (nouvelle, appli pas encore mise à jour), retired (ancienne, à remplacer) */
+const keyState=app=>!KEYS||!KEYS[app]?'none':RETIRED.includes(KEYS[app].x)?'retired':KEYS[app].x===PUB[app].x?'ok':'pending';
+async function newKey(){const kp=await S.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);const j=await S.exportKey('jwk',kp.privateKey);return {kty:'EC',crv:'P-256',x:j.x,y:j.y,d:j.d}}
+const pubMsg=()=>'THOUSAND-PUB '+JSON.stringify(Object.fromEntries(Object.keys(APPS).filter(k=>KEYS[k]&&!RETIRED.includes(KEYS[k].x)).map(k=>[k,{x:KEYS[k].x,y:KEYS[k].y}])));
+const needBackup=()=>+(lsGet(KCKEY)||0)>+(lsGet(BKEY)||0);
+async function saveKeys(){lsSet(VKEY,JSON.stringify(await sealVault(KEYS,PASS)));lsSet(KCKEY,String(Date.now()))}
+async function verify(app,id,code){try{const k=await S.importKey('jwk',pubOf(app),{name:'ECDSA',namedCurve:'P-256'},false,['verify']);return await S.verify({name:'ECDSA',hash:'SHA-256'},k,unb64u(code),enc(id))}catch(e){return false}}
 
 /* ---------- état ---------- */
 let KEYS=null,PASS=null,last=null,q='',cur=lsGet(AKEY)||'nexus';
@@ -254,16 +262,19 @@ function stopScan(){clearInterval(scanTimer);scanTimer=null;if(scanStream){scanS
 /* ---------- écrans ---------- */
 function render(){
   const app=$('#app');document.documentElement.style.setProperty('--app',APPS[cur].color);
-  if(!localVault()){app.innerHTML='<div class="center">'+LOGO+'<h2>Thousand Admin</h2><p class="muted small">Première ouverture sur cet appareil.</p><form class="card" data-form="setup"><label style="margin-top:0">Mot de passe de départ</label><input type="password" name="p0" required autocomplete="off" placeholder="TL-…"><label>Choisis ton mot de passe</label><input type="password" name="p1" required minlength="6" autocomplete="new-password"><label>Confirme-le</label><input type="password" name="p2" required minlength="6" autocomplete="new-password"><button class="btn gold block">Déverrouiller</button></form><label class="btn block">♻️ Restaurer une sauvegarde de clés<input type="file" data-file="vault" accept=".json,application/json" hidden></label><p class="muted small">🔒 Les clés restent chiffrées sur ce téléphone. Sans ton mot de passe, elles sont inutilisables.</p><div class="card">'+TLI.html('Thousand Admin','btn block')+'</div></div>';return}
+  if(!localVault()){app.innerHTML='<div class="center">'+LOGO+'<h2>Thousand Admin</h2><p class="muted small">Première ouverture sur cet appareil.</p><label class="btn gold block">♻️ Restaurer ma sauvegarde de clés (.json)<input type="file" data-file="vault" accept=".json,application/json" hidden></label><p class="muted small">C\'est ce qu\'il faut faire si tu changes de téléphone : sans ta sauvegarde, tes anciennes clés ne peuvent pas être retrouvées.</p><form class="card" data-form="setup"><b>🆕 Nouveau coffre vide</b><p class="muted small">Seulement pour repartir de zéro : il faudra créer de nouvelles clés et mettre à jour les applis.</p><label>Choisis ton mot de passe (10 caractères minimum)</label><input type="password" name="p1" required minlength="10" autocomplete="new-password"><label>Confirme-le</label><input type="password" name="p2" required minlength="10" autocomplete="new-password"><button class="btn block">Créer le coffre</button></form><p class="muted small">🔒 Les clés sont créées et chiffrées sur ce téléphone. Elles ne sont jamais envoyées en ligne.</p><div class="card">'+TLI.html('Thousand Admin','btn block')+'</div></div>';return}
   if(!KEYS){app.innerHTML='<div class="center">'+LOGO+'<h2>Thousand Admin</h2><p class="muted small">Accès réservé</p><form class="card" data-form="login"><label style="margin-top:0">Mot de passe</label><input type="password" name="p" required autocomplete="current-password"><button class="btn gold block">Entrer</button></form><div class="card">'+TLI.html('Thousand Admin','btn block')+'</div></div>';return}
   const A=APPS[cur],h=history_(),hc=h.filter(x=>x.app===cur),m=new Date().toISOString().slice(0,7);
   let html='<div class="wrap"><div class="top"><div class="brand">'+LOGO+'<div><b>Thousand Admin</b><small>Codes d\'activation · '+CONTACT_NAME+'</small></div></div><button class="btn sm" data-act="logout">🔒 Quitter</button></div>';
   html+='<div class="tabs">'+Object.entries(APPS).map(([k,a])=>'<button class="tab '+(k===cur?'on':'')+'" data-act="tab" data-k="'+k+'" style="'+(k===cur?'--app:'+a.color:'')+'">'+a.name+'<small>'+h.filter(x=>x.app===k).length+' code(s)</small></button>').join('')+'</div>';
   html+='<div class="stats"><div><b>'+hc.length+'</b><small>codes '+A.short+'</small></div><div><b>'+hc.filter(x=>new Date(x.at).toISOString().slice(0,7)===m).length+'</b><small>ce mois</small></div><div><b>'+h.length+'</b><small>toutes les applis</small></div></div>';
-  if(!KEYS[cur]&&EXTRA[cur]){
-    html+='<form class="card" data-form="extra"><b>🔑 Activer la clé '+A.name+'</b><p class="muted small">Une seule fois : tape le <b>mot de passe de départ</b> (celui qui commence par TL-) pour ajouter la clé '+A.name+' à ton coffre.</p><input type="password" name="p0" required autocomplete="off" placeholder="TL-…"><button class="btn gold block">Activer</button></form>';
-  }else if(!KEYS[cur]){
-    html+='<div class="card"><b>🔑 Importer ta clé '+A.name+'</b><p class="muted small">Pour générer des codes '+A.name+' ici, ouvre le fichier de ton ancien générateur '+A.name+' ci-dessous : la clé est trouvée et vérifiée automatiquement, puis chiffrée avec ton mot de passe.</p><label class="btn gold block">📂 Choisir l\'ancien générateur (.html)<input type="file" data-file="oldgen" accept=".html,.htm,.txt,.json,text/html" hidden></label><label>…ou colle ici sa clé (JSON avec « d »)</label><textarea id="keyPaste" placeholder=\'{"kty":"EC","crv":"P-256","d":"…"}\'></textarea><button class="btn block" data-act="importPaste">Importer la clé collée</button></div>';
+  if(needBackup())html+='<div class="card" style="border-color:var(--pri)"><b>💾 Sauvegarde tes clés maintenant</b><p class="muted small">Tes clés ont changé et ce téléphone en garde la <b>seule copie</b>. Si tu vides le navigateur ou perds le téléphone sans sauvegarde, plus aucun code ne pourra être créé.</p><button class="btn gold block" data-act="backupVault">💾 Télécharger la sauvegarde chiffrée</button></div>';
+  const ks=keyState(cur);
+  if(ks==='none'||ks==='retired'){
+    html+='<div class="card"><b>🔑 '+(ks==='none'?'Créer la clé ':'Remplacer l\'ancienne clé ')+A.name+'</b><p class="muted small">'+(ks==='retired'?'L\'ancienne clé était publiée (chiffrée) sur GitHub : elle est retirée par sécurité. ':'')+'La nouvelle clé est créée <b>sur ce téléphone</b>, chiffrée avec ton mot de passe, et n\'est jamais mise en ligne. Ensuite : envoie les clés publiques pour mettre à jour '+A.name+', puis renvoie un nouveau code aux clients déjà activés (bouton 🔄 dans l\'historique).</p><button class="btn gold block" data-act="newKey">🔑 Créer la nouvelle clé '+A.name+'</button>'+(ks==='retired'?'<p class="muted small">En attendant, l\'ancienne clé reste utilisable ci-dessous.</p>':'')+'</div>';
+  }
+  if(ks==='pending')html+='<div class="card" style="border-color:var(--pri)"><b>⏳ Nouvelle clé pas encore installée dans '+A.name+'</b><p class="muted small">Les codes créés maintenant ne marcheront qu\'une fois '+A.name+' mise à jour avec la clé publique. Envoie-la pour la mise à jour :</p><div class="btns"><button class="btn gold" data-act="copyPub">📋 Copier les clés publiques</button></div></div>';
+  if(ks==='none'){
   }else{
     html+='<form class="card" data-form="gen"><b>🔑 Générer un code '+A.name+'</b><label>Message WhatsApp du client ou identifiant(s)</label><textarea name="id" id="idIn" required rows="4" style="font:14px/1.45 system-ui,sans-serif" placeholder="Colle ici le message WhatsApp du client, même avec plusieurs identifiants. Ou tape l\'identifiant : '+A.idPh+'" autocomplete="off" spellcheck="false"></textarea><p id="idFound" class="small muted" style="margin:6px 0 0">Seuls les identifiants '+A.name+' sont gardés : le reste du message est ignoré.</p><button type="button" class="btn block" data-act="scanId" style="margin-top:8px">📷 Scanner l\'identifiant du client</button><div class="row" style="gap:10px"><div style="flex:1"><label>Nom du client</label><input name="client" maxlength="40" placeholder="Ex : Awa Diop"></div><div style="flex:1"><label>WhatsApp</label><input name="phone" type="tel" inputmode="tel" maxlength="20" placeholder="77 123 45 67"></div></div><label>Note (pack, prix…)</label><input name="note" maxlength="80" placeholder="Ex : pack 5, payé Wave"><button class="btn pri block">Générer le(s) code(s)</button></form>';
     if(last&&last.app===cur){const n=last.items.length;
@@ -277,21 +288,12 @@ function render(){
   }
   const list=hc.filter(x=>!q||[x.client,x.id,x.note,x.phone].join(' ').toLowerCase().includes(q.toLowerCase()));
   html+='<div class="card"><div class="row"><b>🗂️ Historique '+A.name+'</b><button class="btn sm" data-act="csv">⬇️ CSV</button></div><input id="q" type="search" placeholder="Rechercher…" value="'+esc(q)+'" style="margin-top:10px">'+
-    (list.length?list.slice(0,200).map(x=>'<div class="li"><div class="g"><b>'+esc(x.client||'Sans nom')+'</b><small>'+esc(showId(x.app,x.id))+' · '+new Date(x.at).toLocaleDateString('fr-FR')+(x.note?' · '+esc(x.note):'')+'</small></div><button class="btn sm" data-act="copy" data-t="'+esc(x.code)+'">📋</button><button class="btn sm danger" data-act="del" data-at="'+x.at+'" aria-label="Supprimer">✕</button></div>').join(''):'<p class="muted small">Aucun code pour l\'instant.</p>')+'</div>';
-  html+='<div class="card"><b>⚙️ Sécurité</b><form data-form="chpass"><label>Nouveau mot de passe</label><input type="password" name="p" minlength="6" required autocomplete="new-password"><button class="btn block">Changer le mot de passe</button></form><button class="btn block" data-act="backupVault">💾 Sauvegarder mes clés (fichier chiffré)</button><p class="muted small">Garde cette sauvegarde en lieu sûr (ex : envoyée à toi-même). Elle ne s\'ouvre qu\'avec ton mot de passe.</p></div>';
+    (list.length?list.slice(0,200).map(x=>'<div class="li"><div class="g"><b>'+esc(x.client||'Sans nom')+'</b><small>'+esc(showId(x.app,x.id))+' · '+new Date(x.at).toLocaleDateString('fr-FR')+(x.note?' · '+esc(x.note):'')+'</small></div><button class="btn sm" data-act="copy" data-t="'+esc(x.code)+'">📋</button>'+(KEYS[x.app]?'<button class="btn sm" data-act="regen" data-at="'+x.at+'" aria-label="Nouveau code" title="Nouveau code avec la clé actuelle">🔄</button>':'')+'<button class="btn sm danger" data-act="del" data-at="'+x.at+'" aria-label="Supprimer">✕</button></div>').join(''):'<p class="muted small">Aucun code pour l\'instant.</p>')+'</div>';
+  html+='<div class="card"><b>⚙️ Sécurité</b><form data-form="chpass"><label>Nouveau mot de passe</label><input type="password" name="p" minlength="10" required autocomplete="new-password"><button class="btn block">Changer le mot de passe</button></form><button class="btn block" data-act="copyPub">📋 Copier les clés publiques (pour mettre à jour les applis)</button><button class="btn block" data-act="backupVault">💾 Sauvegarder mes clés (fichier chiffré)</button><p class="muted small">Garde cette sauvegarde en lieu sûr (ex : envoyée à toi-même). Elle ne s\'ouvre qu\'avec ton mot de passe.</p></div>';
   html+='<div class="card"><b>📲 Installer l\'application</b><div style="margin-top:10px">'+TLI.html('Thousand Admin','btn gold block')+'</div><p class="muted small">Garde le lien de Thousand Admin pour toi : il est réservé au vendeur et protégé par ton mot de passe.</p></div></div>';
   app.innerHTML=html;
 }
 
-/* ---------- import de l'ancienne clé ScoreUp (ou autre) ---------- */
-async function importKey(text){
-  const g=n=>{const m=String(text).match(new RegExp('["\']?'+n+'["\']?\\s*:\\s*["\']([A-Za-z0-9_-]{30,})["\']'));return m&&m[1]};
-  const d=g('d');if(!d){toast('❌ Aucune clé trouvée dans ce fichier');return}
-  const jwk={kty:'EC',crv:'P-256',x:PUB[cur].x,y:PUB[cur].y,d};
-  try{const k=await S.importKey('jwk',jwk,{name:'ECDSA',namedCurve:'P-256'},false,['sign']);const sig=await S.sign({name:'ECDSA',hash:'SHA-256'},k,enc('test'));
-    const pk=await S.importKey('jwk',PUB[cur],{name:'ECDSA',namedCurve:'P-256'},false,['verify']);if(!await S.verify({name:'ECDSA',hash:'SHA-256'},pk,sig,enc('test')))throw 0}
-  catch(e){toast('❌ Cette clé ne correspond pas à '+APPS[cur].name);return}
-  KEYS[cur]=jwk;lsSet(VKEY,JSON.stringify(await sealVault(KEYS,PASS)));render();toast('✅ Clé '+APPS[cur].name+' importée et chiffrée')}
 
 function waText(){const A=APPS[last.app],its=last.items,hi='Bonjour'+(last.client?' '+last.client:'')+' 👋\n\n';
   if(its.length===1)return hi+'Voici ton code d\'activation *'+A.name+'* (à copier en entier) :\n\n'+its[0].code+'\n\nIl fonctionne uniquement sur ton téléphone. Bienvenue ! 🚀';
@@ -308,15 +310,13 @@ function liveIds(){const el=$('#idIn'),out=$('#idFound');if(!el||!out)return;con
   const info=parseMsg(v),f=el.form;if(!f)return;
   [['phone',info.phone],['note',info.note],['client',info.name]].forEach(([k,val])=>{const i=f.elements[k];if(i&&val&&!i.value)i.value=val})}
 const FORMS={
-  setup:async fd=>{const p0=String(fd.get('p0')).trim(),a=fd.get('p1'),b=fd.get('p2');if(a!==b){toast('Les deux mots de passe sont différents');return}
-    toast('Déverrouillage…');let keys;try{keys=await openVault(VAULT0,p0)}catch(e){toast('❌ Mot de passe de départ incorrect');return}
-    lsSet(VKEY,JSON.stringify(await sealVault(keys,a)));KEYS=keys;PASS=a;render();toast('✅ Prêt ! Ton mot de passe protège maintenant les clés')},
+  setup:async fd=>{const a=String(fd.get('p1')),b=String(fd.get('p2'));if(a!==b){toast('Les deux mots de passe sont différents');return}if(a.length<10){toast('10 caractères minimum');return}
+    if(!confirm('Créer un coffre vide ? Les codes déjà donnés aux clients ne pourront plus être recréés sans ta sauvegarde.'))return;
+    KEYS={};PASS=a;lsSet(VKEY,JSON.stringify(await sealVault(KEYS,PASS)));render();toast('✅ Coffre créé : crée maintenant tes clés')},
   login:async fd=>{const p=fd.get('p');toast('Vérification…');try{KEYS=await openVault(localVault(),p);PASS=p;render()}catch(e){toast('❌ Mot de passe incorrect')}},
-  extra:async fd=>{toast('Déverrouillage…');let k;try{k=await openVault(EXTRA[cur],String(fd.get('p0')).trim())}catch(e){toast('❌ Mot de passe de départ incorrect');return}
-    Object.assign(KEYS,k);lsSet(VKEY,JSON.stringify(await sealVault(KEYS,PASS)));render();toast('✅ Clé '+APPS[cur].name+' activée')},
   gen:async fd=>{const text=String(fd.get('id')||'');let app=cur,r=findIds(cur,text);
     if(!r.ids.length){const o=otherApps(text);if(o.length===1){app=o[0];cur=app;lsSet(AKEY,cur);q='';
-      if(!KEYS[app]){last=null;render();toast('Ce message concerne '+APPS[app].name+' : active d\'abord sa clé');return}r=findIds(app,text)}}
+      if(!KEYS[app]){last=null;render();toast('Ce message concerne '+APPS[app].name+' : crée d\'abord sa clé');return}r=findIds(app,text)}}
     const A=APPS[app];
     if(!r.ids.length){toast(r.bad.length?'❌ Identifiant illisible : '+r.bad[0]+' (demande-le à nouveau)':'❌ Aucun identifiant '+A.name+' trouvé (format '+A.idPh+')');return}
     const info=parseMsg(text),n=r.ids.length;
@@ -332,14 +332,19 @@ const FORMS={
     toast(n>1?n+' codes générés ✅':'Code généré ✅')},
   check:async fd=>{const id=APPS[cur].norm(fd.get('id')),r=$('#checkRes');if(!id){r.innerHTML='<span class="bad">❌ Identifiant invalide</span>';return}
     const c=String(fd.get('code')).replace(/\s+/g,'').replace(/^[A-Z]+CODE:/,'');r.innerHTML=(await verify(cur,id,c))?'<span class="ok">✅ Code valide pour cet appareil</span>':'<span class="bad">❌ Code invalide pour cet appareil</span>'},
-  chpass:async fd=>{PASS=fd.get('p');lsSet(VKEY,JSON.stringify(await sealVault(KEYS,PASS)));toast('Mot de passe changé ✅');render()}
+  chpass:async fd=>{const p=String(fd.get('p'));if(p.length<10){toast('10 caractères minimum');return}PASS=p;await saveKeys();toast('Mot de passe changé ✅ — refais une sauvegarde');render()}
 };
 const ACT={
   tab:t=>{cur=t.dataset.k;lsSet(AKEY,cur);q='';render()},
   logout:()=>{KEYS=null;PASS=null;last=null;render()},
   copy:t=>copyText(t.dataset.t),
+  newKey:async()=>{const A=APPS[cur];if(KEYS[cur]&&!confirm('Remplacer la clé '+A.name+' ? Les codes faits avec l\'ancienne clé cesseront de marcher quand '+A.name+' sera mise à jour.'))return;
+    try{const k=await newKey();KEYS[cur]=k;await saveKeys();render();toast('✅ Nouvelle clé '+A.name+' créée sur ce téléphone')}catch(e){toast('❌ Création impossible sur ce navigateur')}},
+  copyPub:()=>{const m=pubMsg();if(m==='THOUSAND-PUB {}'){toast('Aucune nouvelle clé pour l\'instant');return}copyText(m)},
+  regen:async t=>{const h=history_(),x=h.find(y=>String(y.at)===t.dataset.at);if(!x||!KEYS[x.app])return;
+    const code=await sign(x.app,x.id),now=Date.now();h.unshift({at:now,app:x.app,id:x.id,code,client:x.client,phone:x.phone,note:(x.note?x.note+' · ':'')+'nouveau code'});saveHistory(h);
+    cur=x.app;lsSet(AKEY,cur);last={app:x.app,client:x.client,phone:x.phone,items:[{id:x.id,code,dup:0}],warn:''};render();window.scrollTo(0,0);toast('🔄 Nouveau code prêt : envoie-le au client')},
   closeSheet:()=>closeSheet(),
-  importPaste:()=>importKey($('#keyPaste').value),
   scanId:()=>{const A=APPS[cur];openSheet('<div class="row"><b>📷 Scanner l\'identifiant</b><button class="btn sm" data-act="closeSheet">✕</button></div><p class="muted small cm">'+A.hint+'</p><div class="scanbox"><video id="scanV"></video><i></i></div><p id="scanS" class="small cm">Ouverture de la caméra…</p>');
     startScan($('#scanV'),$('#scanS'),t=>{t=String(t).trim();let id=null;for(const [k,a] of Object.entries(APPS)){if(t.startsWith(a.qid)){if(k!==cur){$('#scanS').textContent='⚠️ Ce QR est pour '+a.name+', pas '+A.name;return}id=A.norm(t.slice(a.qid.length))}}
       if(!id)id=A.norm(t);if(id){closeSheet();const i=document.querySelector('form[data-form=gen] [name=id]');if(i){const sv=showId(cur,id);if(!i.value.includes(sv))i.value=(i.value.trim()?i.value.trim()+'\n':'')+sv;liveIds()}try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}toast('Identifiant scanné ✅')}})},
@@ -351,17 +356,17 @@ const ACT={
   csv:()=>{const h=history_();const rows=[['Date','Appli','Client','WhatsApp','Identifiant','Note','Code']].concat(h.map(x=>[new Date(x.at).toLocaleString('fr-FR'),APPS[x.app]?APPS[x.app].name:x.app,x.client,x.phone,showId(x.app,x.id),x.note,x.code]));
     const csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\n');
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='thousand-codes-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500)},
-  backupVault:()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'thousand-admin-vault',at:Date.now(),vault:localVault()})],{type:'application/json'}));a.download='thousand-admin-cles-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500);toast('Sauvegarde téléchargée 💾')}
+  backupVault:()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'thousand-admin-vault',at:Date.now(),vault:localVault()})],{type:'application/json'}));a.download='thousand-admin-cles-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500);lsSet(BKEY,String(Date.now()));render();toast('Sauvegarde téléchargée 💾 : garde-la hors du téléphone (Drive, WhatsApp à toi-même)')}
 };
 document.addEventListener('submit',e=>{const f=e.target;if(!f.dataset.form)return;e.preventDefault();FORMS[f.dataset.form]&&FORMS[f.dataset.form](new FormData(f),f)});
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(t&&ACT[t.dataset.act]){e.preventDefault();ACT[t.dataset.act](t)}});
 $('#ov').addEventListener('click',e=>{if(e.target.id==='ov')closeSheet()});
 document.addEventListener('input',e=>{if(e.target.id==='idIn'){liveIds();return}if(e.target.id==='q'){q=e.target.value;const pos=e.target.selectionStart;render();const n=$('#q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}});
 document.addEventListener('change',async e=>{const t=e.target;if(!t.dataset.file||!t.files||!t.files[0])return;const txt=await t.files[0].text();t.value='';
-  if(t.dataset.file==='oldgen')importKey(txt);
   if(t.dataset.file==='vault'){try{const o=JSON.parse(txt);if(o.app!=='thousand-admin-vault'||!o.vault)throw 0;lsSet(VKEY,JSON.stringify(o.vault));render();toast('✅ Clés restaurées : entre le mot de passe de cette sauvegarde')}catch(_){toast('❌ Fichier de sauvegarde invalide')}}});
 if(!(window.crypto&&crypto.subtle))document.addEventListener('DOMContentLoaded',()=>toast('⚠️ Ouvre Thousand Admin depuis son lien https'));
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 render();
 </script>
 </body>

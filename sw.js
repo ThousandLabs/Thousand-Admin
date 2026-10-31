@@ -1,7 +1,7 @@
 /* Thousand Admin — service worker : appli disponible hors ligne, mises à jour automatiques */
-const CACHE = 'thousand-admin-v2.5';
+const CACHE = 'thousand-admin-v2.6';
 const PREFIX = 'thousand-admin-v'; /* les applis Thousand Labs partagent le même domaine : on ne touche qu'à NOS caches */
-const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
+const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png?v=3', './icon-512.png?v=3', './apple-touch-icon.png?v=3'];
 const OFFLINE = () => new Response(
         '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:sans-serif;padding:24px;text-align:center"><h2>Hors ligne</h2><p>Ouvrez l\'appli une fois avec une connexion pour l\'activer hors ligne, puis réessayez.</p></body>',
         { headers: { 'Content-Type': 'text/html; charset=utf-8' } });

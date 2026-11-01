@@ -60,6 +60,8 @@ input:focus,textarea:focus{border-color:var(--app)}
 @media(min-width:620px){.ov{align-items:center}.sheet{border-radius:24px}}
 .cm{text-align:center}
 .hidden{display:none!important}
+body.games{--bg:#140b24;--card:#1f1238;--card2:#2a1a4a;--line:#3b2766;--muted:#b3a3d6;--soft:#24163f}
+body.games .brand svg rect{fill:#2a1a4a;stroke:#6d4bb3}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#fff;color:#151834;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%)}
 </style>
@@ -107,7 +109,7 @@ var TLI=(function(){
   };
 })();
 /* =========================================================
-   THOUSAND ADMIN — générateur de codes pour Nexus Track, Budget Flow, ScoreUp et Power Log
+   THOUSAND ADMIN — générateur de codes pour Nexus Track, Budget Flow, ScoreUp et Power Log (+ espace Thousand Games : New World)
    Ce fichier ne contient AUCUNE clé secrète : elles sont créées sur ton téléphone et chiffrées par ton mot de passe.
    ========================================================= */
 const PUB = {"nexus": {"kty": "EC", "crv": "P-256", "x": "sYHmmM-g8g18TlWU2le4nJIQt8r_8WLwXYI8RUa9wg8", "y": "kuUMXZOEERKPX5PU7kLzdIB9E7GMXvI1SDmxpuoZ23A"}, "budget": {"kty": "EC", "crv": "P-256", "x": "RVmjz3pvJuUWH1lmkzXeVf55zMDiGSrFi2QknF_YE34", "y": "oeHbjw8z07nwufMqfT-0P25PUCTElUkLxDbIFTm1x_0"}, "scoreup": {"kty": "EC", "crv": "P-256", "x": "U5H9ls12KVJppTDBauCZZ5M37TTcXAjJGtUqcrfg7rA", "y": "ebHtUCvzAcDDlih6dLge5k85ZqBcKO2hPRG13gjoYm0"}, "power": {"kty": "EC", "crv": "P-256", "x": "VIGa7LpUHEjrqTlXxAtGGkGWJXe-8MaBBfAT2F8YtRI", "y": "AMVjEpSsyPmpFYd-smIUXbtBhhpM0z4BW7GzQiJDXgo"}};               // clés publiques (pour vérifier)
@@ -133,15 +135,24 @@ const APPS={
     hint:'Le client touche « 🔳 Afficher en QR » sous son identifiant.',scanHint:'Le client touche « 📷 Scanner le code ».'},
   power:{name:'Power Log',short:'Power',color:'#fb923c',idPh:'PL-XXXX-XXXX',qid:'PLID:',qcode:'PLCODE:',
     norm(v){let x=up(v).replace(/[^A-Z0-9]/g,'');if(x.startsWith('PL'))x=x.slice(2);return x.length===8&&[...x].every(c=>AL_BF.includes(c))?'PL-'+x.slice(0,4)+'-'+x.slice(4):null},
-    hint:'Le client touche « 🔳 QR » sous son code appareil.',scanHint:'Le client touche « 📷 Scanner le code du vendeur ».'}
+    hint:'Le client touche « 🔳 QR » sous son code appareil.',scanHint:'Le client touche « 📷 Scanner le code du vendeur ».'},
+  newworld:{name:'New World',short:'New World',color:'#c084fc',idPh:'NW-XXXX-XXXX',qid:'NWID:',qcode:'NWCODE:',space:'games',
+    norm(v){let x=up(v).replace(/[^A-Z0-9]/g,'');if(x.startsWith('NW'))x=x.slice(2);return x.length===8&&[...x].every(c=>AL_NX.includes(c))?'NW-'+x.slice(0,4)+'-'+x.slice(4):null},
+    hint:'Le client t\'envoie son identifiant NW-… depuis l\'écran « Activation » de New World.',scanHint:'Le client colle le code dans l\'écran « Activation » de New World.'}
 };
+/* Deux espaces : Thousand Admin (applis Thousand Labs) et Thousand Games (jeux, dépôt séparé ThousandLabs-Games) */
+const SKEY='tla_space';
+let SPACE=lsGet0(SKEY)==='games'?'games':'labs';
+function lsGet0(k){try{return localStorage.getItem(k)}catch(e){return null}}
+const inSpace=k=>(APPS[k].space||'labs')===SPACE;
+const spaceApps=()=>Object.keys(APPS).filter(inSpace);
 const showId=(app,id)=>APPS[app].show?APPS[app].show(id):id;
 
 /* ---------- lecture d'un message WhatsApp collé ----------
    On ne garde que ce qui ressemble à un identifiant de l'appli (NX-…, BF-…, PL-…,
    ou 24 caractères hexadécimaux pour ScoreUp) ; tout le reste du message est ignoré.
    strict=true : pas d'essai « identifiant tapé sans préfixe ». */
-const ID_PREFIX={nexus:'NX',budget:'BF',power:'PL'};
+const ID_PREFIX={nexus:'NX',budget:'BF',power:'PL',newworld:'NW'};
 function findIds(app,text,strict){const A=APPS[app],t=String(text||''),ids=[],bad=[];
   const add=v=>{const id=A.norm(v);if(id&&!ids.includes(id))ids.push(id);return id};
   if(app==='scoreup'){(t.match(/[0-9a-f]{4}(?:[\s-]?[0-9a-f]{4}){5}/gi)||[]).forEach(add)}
@@ -150,7 +161,7 @@ function findIds(app,text,strict){const A=APPS[app],t=String(text||''),ids=[],ba
   if(!ids.length&&!bad.length&&!strict)add(t);
   return {ids,bad}}
 /* Autres applis présentes dans le message (si l'onglet ouvert n'est pas le bon) */
-const otherApps=text=>Object.keys(APPS).filter(k=>k!==cur&&findIds(k,text,true).ids.length);
+const otherApps=text=>spaceApps().filter(k=>k!==cur&&findIds(k,text,true).ids.length);
 /* Infos du message d'achat envoyé par les applis : numéro qui a payé, pack, moyen de paiement, nom */
 function parseMsg(text){const t=String(text||''),r={};
   let m=t.match(/depuis le\s*(\+?\d[\d .]{6,}\d)/i);if(m)r.phone=m[1].replace(/\s+/g,' ').trim();
@@ -171,7 +182,7 @@ async function sealVault(keys,pass){const salt=crypto.getRandomValues(new Uint8A
 async function sign(app,id){const k=await S.importKey('jwk',KEYS[app],{name:'ECDSA',namedCurve:'P-256'},false,['sign']);return b64u(await S.sign({name:'ECDSA',hash:'SHA-256'},k,enc(id)))}
 const pubOf=app=>KEYS&&KEYS[app]?{kty:'EC',crv:'P-256',x:KEYS[app].x,y:KEYS[app].y}:PUB[app];
 /* État de la clé : none (aucune), ok (installée dans l'appli), pending (nouvelle, appli pas encore mise à jour), retired (ancienne, à remplacer) */
-const keyState=app=>!KEYS||!KEYS[app]?'none':RETIRED.includes(KEYS[app].x)?'retired':KEYS[app].x===PUB[app].x?'ok':'pending';
+const keyState=app=>!KEYS||!KEYS[app]?'none':RETIRED.includes(KEYS[app].x)?'retired':(PUB[app]&&KEYS[app].x===PUB[app].x)?'ok':'pending';
 async function newKey(){const kp=await S.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);const j=await S.exportKey('jwk',kp.privateKey);return {kty:'EC',crv:'P-256',x:j.x,y:j.y,d:j.d}}
 const pubMsg=()=>'THOUSAND-PUB '+JSON.stringify(Object.fromEntries(Object.keys(APPS).filter(k=>KEYS[k]&&!RETIRED.includes(KEYS[k].x)).map(k=>[k,{x:KEYS[k].x,y:KEYS[k].y}])));
 const needBackup=()=>+(lsGet(KCKEY)||0)>+(lsGet(BKEY)||0);
@@ -179,7 +190,7 @@ async function saveKeys(){lsSet(VKEY,JSON.stringify(await sealVault(KEYS,PASS)))
 async function verify(app,id,code){try{const k=await S.importKey('jwk',pubOf(app),{name:'ECDSA',namedCurve:'P-256'},false,['verify']);return await S.verify({name:'ECDSA',hash:'SHA-256'},k,unb64u(code),enc(id))}catch(e){return false}}
 
 /* ---------- état ---------- */
-let KEYS=null,PASS=null,last=null,q='',cur=lsGet(AKEY)||'nexus';
+let KEYS=null,PASS=null,last=null,q='',cur=lsGet(AKEY)||'nexus';if(!APPS[cur]||!inSpace(cur))cur=spaceApps()[0];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -263,13 +274,13 @@ function stopScan(){clearInterval(scanTimer);scanTimer=null;if(scanStream){scanS
 
 /* ---------- écrans ---------- */
 function render(){
-  const app=$('#app');document.documentElement.style.setProperty('--app',APPS[cur].color);
+  const app=$('#app');document.documentElement.style.setProperty('--app',APPS[cur].color);document.body.classList.toggle('games',SPACE==='games');
   if(!localVault()){app.innerHTML='<div class="center">'+LOGO+'<h2>Thousand Admin</h2><p class="muted small">Première ouverture sur cet appareil.</p><label class="btn gold block">♻️ Restaurer ma sauvegarde de clés (.json)<input type="file" data-file="vault" accept=".json,application/json" hidden></label><p class="muted small">C\'est ce qu\'il faut faire si tu changes de téléphone : sans ta sauvegarde, tes anciennes clés ne peuvent pas être retrouvées.</p><form class="card" data-form="setup"><b>🆕 Nouveau coffre vide</b><p class="muted small">Seulement pour repartir de zéro : il faudra créer de nouvelles clés et mettre à jour les applis.</p><label>Choisis ton mot de passe (10 caractères minimum)</label><input type="password" name="p1" required minlength="10" autocomplete="new-password"><label>Confirme-le</label><input type="password" name="p2" required minlength="10" autocomplete="new-password"><button class="btn block">Créer le coffre</button></form><p class="muted small">🔒 Les clés sont créées et chiffrées sur ce téléphone. Elles ne sont jamais envoyées en ligne.</p><div class="card">'+TLI.html('Thousand Admin','btn block')+'</div></div>';return}
   if(!KEYS){app.innerHTML='<div class="center">'+LOGO+'<h2>Thousand Admin</h2><p class="muted small">Accès réservé</p><form class="card" data-form="login"><label style="margin-top:0">Mot de passe</label><input type="password" name="p" required autocomplete="current-password"><button class="btn gold block">Entrer</button></form><div class="card">'+TLI.html('Thousand Admin','btn block')+'</div></div>';return}
-  const A=APPS[cur],h=history_(),hc=h.filter(x=>x.app===cur),m=new Date().toISOString().slice(0,7);
-  let html='<div class="wrap"><div class="top"><div class="brand">'+LOGO+'<div><b>Thousand Admin</b><small>Codes d\'activation · '+CONTACT_NAME+'</small></div></div><button class="btn sm" data-act="logout">🔒 Quitter</button></div>';
-  html+='<div class="tabs">'+Object.entries(APPS).map(([k,a])=>'<button class="tab '+(k===cur?'on':'')+'" data-act="tab" data-k="'+k+'" style="'+(k===cur?'--app:'+a.color:'')+'">'+a.name+'<small>'+h.filter(x=>x.app===k).length+' code(s)</small></button>').join('')+'</div>';
-  html+='<div class="stats"><div><b>'+hc.length+'</b><small>codes '+A.short+'</small></div><div><b>'+hc.filter(x=>new Date(x.at).toISOString().slice(0,7)===m).length+'</b><small>ce mois</small></div><div><b>'+h.length+'</b><small>toutes les applis</small></div></div>';
+  const A=APPS[cur],h=history_(),hs=h.filter(x=>APPS[x.app]&&inSpace(x.app)),hc=h.filter(x=>x.app===cur),m=new Date().toISOString().slice(0,7),G=SPACE==='games';
+  let html='<div class="wrap"><div class="top"><div class="brand">'+LOGO+'<div><b>'+(G?'Thousand Games':'Thousand Admin')+'</b><small>Codes d\'activation · '+(G?'Thousand Labs Games':CONTACT_NAME)+'</small></div></div><button class="btn sm" data-act="logout">🔒 Quitter</button></div>';
+  html+='<div class="tabs" style="grid-template-columns:repeat('+Math.max(2,spaceApps().length)+',1fr)">'+Object.entries(APPS).filter(([k])=>inSpace(k)).map(([k,a])=>'<button class="tab '+(k===cur?'on':'')+'" data-act="tab" data-k="'+k+'" style="'+(k===cur?'--app:'+a.color:'')+'">'+a.name+'<small>'+h.filter(x=>x.app===k).length+' code(s)</small></button>').join('')+'</div>';
+  html+='<div class="stats"><div><b>'+hc.length+'</b><small>codes '+A.short+'</small></div><div><b>'+hc.filter(x=>new Date(x.at).toISOString().slice(0,7)===m).length+'</b><small>ce mois</small></div><div><b>'+hs.length+'</b><small>'+(G?'tous les jeux':'toutes les applis')+'</small></div></div>';
   if(needBackup())html+='<div class="card" style="border-color:var(--pri)"><b>💾 Sauvegarde tes clés maintenant</b><p class="muted small">Tes clés ont changé et ce téléphone en garde la <b>seule copie</b>. Si tu vides le navigateur ou perds le téléphone sans sauvegarde, plus aucun code ne pourra être créé.</p><button class="btn gold block" data-act="backupVault">💾 Télécharger la sauvegarde chiffrée</button></div>';
   const ks=keyState(cur);
   if(ks==='none'||ks==='retired'){
@@ -291,6 +302,7 @@ function render(){
   const list=hc.filter(x=>!q||[x.client,x.id,x.note,x.phone].join(' ').toLowerCase().includes(q.toLowerCase()));
   html+='<div class="card"><div class="row"><b>🗂️ Historique '+A.name+'</b><button class="btn sm" data-act="csv">⬇️ CSV</button></div><input id="q" type="search" placeholder="Rechercher…" value="'+esc(q)+'" style="margin-top:10px">'+
     (list.length?list.slice(0,200).map(x=>'<div class="li"><div class="g"><b>'+esc(x.client||'Sans nom')+'</b><small>'+esc(showId(x.app,x.id))+' · '+new Date(x.at).toLocaleDateString('fr-FR')+(x.note?' · '+esc(x.note):'')+'</small></div><button class="btn sm" data-act="copy" data-t="'+esc(x.code)+'">📋</button>'+(KEYS[x.app]?'<button class="btn sm" data-act="regen" data-at="'+x.at+'" aria-label="Nouveau code" title="Nouveau code avec la clé actuelle">🔄</button>':'')+'<button class="btn sm danger" data-act="del" data-at="'+x.at+'" aria-label="Supprimer">✕</button></div>').join(''):'<p class="muted small">Aucun code pour l\'instant.</p>')+'</div>';
+  html+='<div class="card"><b>'+(G?'Espace Thousand Games':'Espace Thousand Games')+'</b><p class="muted small">'+(G?'Tu es dans l\'espace des jeux (New World). Clés, codes et historique séparés de Thousand Admin.':'Les jeux Thousand Labs Games (New World) ont leur propre espace, avec des clés et un historique séparés.')+'</p><button class="btn block '+(G?'':'gold')+'" data-act="space">'+(G?'↩ Revenir à Thousand Admin':'🎮 Basculer vers Thousand Games')+'</button></div>';
   html+='<div class="card"><b>⚙️ Sécurité</b><form data-form="chpass"><label>Nouveau mot de passe</label><input type="password" name="p" minlength="10" required autocomplete="new-password"><button class="btn block">Changer le mot de passe</button></form><button class="btn block" data-act="copyPub">📋 Copier les clés publiques (pour mettre à jour les applis)</button><button class="btn block" data-act="backupVault">💾 Sauvegarder mes clés (fichier chiffré)</button><p class="muted small">Garde cette sauvegarde en lieu sûr (ex : envoyée à toi-même). Elle ne s\'ouvre qu\'avec ton mot de passe.</p></div>';
   html+='<div class="card"><b>📲 Installer l\'application</b><div style="margin-top:10px">'+TLI.html('Thousand Admin','btn gold block')+'</div><p class="muted small">Garde le lien de Thousand Admin pour toi : il est réservé au vendeur et protégé par ton mot de passe.</p></div></div>';
   app.innerHTML=html;
@@ -340,6 +352,7 @@ const FORMS={
 };
 const ACT={
   tab:t=>{cur=t.dataset.k;lsSet(AKEY,cur);q='';render()},
+  space:()=>{SPACE=SPACE==='games'?'labs':'games';lsSet(SKEY,SPACE);cur=spaceApps()[0];lsSet(AKEY,cur);q='';last=null;render();window.scrollTo(0,0);toast(SPACE==='games'?'🎮 Espace Thousand Games':'Espace Thousand Admin')},
   logout:()=>{KEYS=null;PASS=null;last=null;render()},
   copy:t=>copyText(t.dataset.t),
   newKey:async()=>{const A=APPS[cur];if(KEYS[cur]&&!confirm('Remplacer la clé '+A.name+' ? Les codes faits avec l\'ancienne clé cesseront de marcher quand '+A.name+' sera mise à jour.'))return;

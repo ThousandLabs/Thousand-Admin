@@ -86,6 +86,8 @@ var TLI=(function(){
       addEventListener('appinstalled',function(){evt=null;upd()})}catch(e){}
   function sa(){try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}}
   function ios(){var u=navigator.userAgent||'';return /iphone|ipad|ipod/i.test(u)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
+  /* Navigateur Android qui ne sait créer qu'un raccourci (pas de vraie installation) */
+  function bw(){var u=navigator.userAgent||'';if(!/android/i.test(u))return '';return navigator.brave?'Brave':/OPR\/|Opera/.test(u)?'Opera':/Firefox\//.test(u)?'Firefox':/MiuiBrowser/.test(u)?'Mi Browser':/HeyTapBrowser/.test(u)?'HeyTap':/PHX\//.test(u)?'Phoenix':/UCBrowser/.test(u)?'UC Browser':/; wv\)/.test(u)?T('le navigateur intégré d\'une appli'):''}
   function inner(name,btn){
     var st='',S='style="margin:6px 0 0;font-size:13.5px;line-height:1.5;opacity:.85"';
     if(evt)st='<p style="margin:0 0 8px;font-size:14.5px;line-height:1.5">'+T('Ton navigateur peut installer {app} comme une vraie application : icône propre (sans logo de navigateur), plein écran et ouverture hors ligne.').replace('{app}','<b>'+name+'</b>')+'</p>'
@@ -94,7 +96,8 @@ var TLI=(function(){
     else if(sa())st='<p style="margin:0;font-size:14.5px;line-height:1.5">✅ '+T('{app} est ouverte comme une application.').replace('{app}','<b>'+name+'</b>')+'</p>'
       +'<p '+S+'>'+T('Si son icône porte le petit logo de ton navigateur, c\'est un simple raccourci. Pour une installation complète, suis les étapes ci-dessous.')+'</p>';
     else st='<p style="margin:0;font-size:14.5px;line-height:1.5">'+T('Installe {app} sur ton écran d\'accueil : elle s\'ouvrira comme une vraie application, même sans Internet.').replace('{app}','<b>'+name+'</b>')+'</p>';
-    var A='<p style="margin:10px 0 4px"><b>📱 Android (Chrome, Brave, Samsung Internet)</b></p><ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.55"><li>'+T('Ouvre le lien de l\'appli dans le navigateur, avec Internet.')+'</li><li>'+T('Touche le menu <b>⋮</b> (en haut ou en bas à droite).')+'</li><li>'+T('Choisis <b>« Installer l\'application »</b>. Évite « Ajouter à l\'écran d\'accueil » : ça crée un simple raccourci avec le logo du navigateur.')+'</li><li>'+T('Si « Installer » n\'apparaît pas : recharge la page, attends quelques secondes et réessaie.')+'</li></ol>';
+    var B=bw();if(B&&!evt&&!sa())st='<p style="margin:0 0 10px;font-size:14.5px;line-height:1.5;color:#f59e0b">⚠️ '+T('Tu utilises {b} : il ne peut créer qu\'un simple raccourci. Pour installer la vraie application, ouvre ce lien dans Chrome.').replace('{b}','<b>'+B+'</b>')+'</p><button type="button" class="'+btn+'" style="width:100%;margin-bottom:10px" onclick="TLI.copy()">📋 '+T('Copier le lien pour l\'ouvrir dans Chrome')+'</button>'+st;
+    var A='<p style="margin:10px 0 4px"><b>📱 Android (Chrome)</b></p><ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.55"><li>'+T('Ouvre le lien de l\'appli dans <b>Chrome</b>, avec Internet. Brave, Opera et les autres navigateurs ne créent qu\'un simple raccourci.')+'</li><li>'+T('Touche le menu <b>⋮</b> (en haut ou en bas à droite).')+'</li><li>'+T('Choisis <b>« Installer l\'application »</b>. Évite « Ajouter à l\'écran d\'accueil » : ça crée un simple raccourci avec le logo du navigateur.')+'</li><li>'+T('Si « Installer » n\'apparaît pas : recharge la page, attends quelques secondes et réessaie.')+'</li></ol>';
     var I='<p style="margin:10px 0 4px"><b>🍏 iPhone / iPad (Safari)</b></p><ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.55"><li>'+T('Ouvre le lien dans <b>Safari</b>.')+'</li><li>'+T('Touche <b>Partager</b> (le carré avec une flèche).')+'</li><li>'+T('Choisis <b>« Sur l\'écran d\'accueil »</b>, puis <b>Ajouter</b>.')+'</li></ol><p '+S+'>⚠️ '+T('Sur iPhone, installe l\'appli AVANT de l\'activer, puis ouvre-la toujours depuis son icône : l\'iPhone sépare Safari et les applis installées.')+'</p>';
     var C='<p style="margin:10px 0 4px"><b>💻 '+T('Ordinateur (Chrome, Edge, Brave)')+'</b></p><p style="margin:0;font-size:14px">'+T('Clique sur l\'icône d\'installation à droite de la barre d\'adresse.')+'</p>';
     var steps=ios()?I+A+C:A+I+C;
@@ -104,6 +107,7 @@ var TLI=(function(){
   function upd(){try{document.querySelectorAll('[data-tli]').forEach(function(el){el.innerHTML=inner(el.getAttribute('data-tli'),el.getAttribute('data-tlib')||'')})}catch(e){}}
   return {
     html:function(name,btn){return '<div data-tli="'+name+'" data-tlib="'+(btn||'')+'">'+inner(name,btn||'')+'</div>'},
+    copy:function(){var h=location.href.split('#')[0];try{navigator.clipboard.writeText(h).then(function(){alert(T('Lien copié : colle-le dans Chrome.'))},function(){prompt(T('Copie ce lien :'),h)})}catch(e){prompt(T('Copie ce lien :'),h)}},
     go:function(){if(!evt)return;var e=evt;e.prompt();(e.userChoice||Promise.resolve()).then(function(){evt=null;upd()},function(){evt=null;upd()})},
     can:function(){return !!evt},standalone:sa,upd:upd,t:null
   };

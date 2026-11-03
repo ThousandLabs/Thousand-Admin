@@ -1,5 +1,5 @@
 /* Thousand Admin — service worker : appli disponible hors ligne, mises à jour automatiques */
-const CACHE = 'thousand-admin-v2.15';
+const CACHE = 'thousand-admin-v2.16';
 const PREFIX = 'thousand-admin-v'; /* les applis Thousand Labs partagent le même domaine : on ne touche qu'à NOS caches */
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png?v=3', './icon-512.png?v=3', './apple-touch-icon.png?v=3'];
 const OFFLINE = () => new Response(
@@ -15,7 +15,8 @@ self.addEventListener('fetch', e => {
        • on n'enregistre que la vraie page de l'appli (pas une erreur 404 ni la page
          de connexion d'un wifi public, qui remplaceraient l'appli hors ligne). */
     const good = res => res && res.ok && !res.redirected && res.type === 'basic';
-    const net = fetch(r).then(res => { if (good(res)) { const cp = res.clone(); caches.open(CACHE).then(c => c.put('./index.html', cp)); } return res; });
+    /* cache: 'no-cache' : on demande toujours au serveur si la page a changé (sinon le navigateur peut garder l'ancienne version jusqu'à 10 min) */
+    const net = fetch(r.url, { cache: 'no-cache', credentials: 'same-origin' }).then(res => { if (good(res)) { const cp = res.clone(); caches.open(CACHE).then(c => c.put('./index.html', cp)); } return res; });
     e.waitUntil(net.then(() => {}, () => {}));
     const cached = () => caches.match('./index.html').then(m => m || caches.match('./'));
     e.respondWith(new Promise(done => {

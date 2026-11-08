@@ -49,7 +49,7 @@ input:focus,textarea:focus{border-color:var(--app)}
 .li .g{flex:1;min-width:0}.li .g b,.li .g small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.li .g small{color:var(--muted);font-size:12px}
 .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--card2);border:1px solid var(--line)}
 .center{max-width:400px;margin:0 auto;padding:48px 18px;text-align:center}
-.center .card{text-align:left}.center svg{width:72px;height:72px;margin:0 auto 10px}
+.center .card{text-align:left}.center svg:not(.eic){width:72px;height:72px;margin:0 auto 10px}
 .ok{color:var(--ok)}.bad{color:var(--danger)}
 .qr{display:block;width:100%;max-width:320px;height:auto;margin:12px auto;border-radius:14px;image-rendering:pixelated}
 .scanbox{position:relative;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:1/1;max-width:360px;margin:12px auto}
@@ -303,6 +303,9 @@ const APPS={
   power:{name:'Power Log',short:'Power',color:'#fb923c',idPh:'PL-XXXX-XXXX',qid:'PLID:',qcode:'PLCODE:',
     norm(v){let x=up(v).replace(/[^A-Z0-9]/g,'');if(x.startsWith('PL'))x=x.slice(2);return x.length===8&&[...x].every(c=>AL_BF.includes(c))?'PL-'+x.slice(0,4)+'-'+x.slice(4):null},
     hint:'Le client touche « 🔳 QR » sous son code appareil.',scanHint:'Le client touche « 📷 Scanner le code du vendeur ».'},
+  tonedial:{name:'Tone Dial',short:'Tone Dial',color:'#f2b544',idPh:'TD-XXXX-XXXX',qid:'TDID:',qcode:'TDCODE:',
+    norm(v){let x=up(v).replace(/[^A-Z0-9]/g,'');if(x.startsWith('TD'))x=x.slice(2);return x.length===8&&[...x].every(c=>AL_NX.includes(c))?'TD-'+x.slice(0,4)+'-'+x.slice(4):null},
+    hint:'Le client t\'envoie son code appareil TD-… (Tone Dial › À propos › Licence, ou depuis l\'écran d\'activation).',scanHint:'Le client colle le code dans l\'écran d\'activation de Tone Dial.'},
   newworld:{name:'New World',short:'New World',color:'#c084fc',idPh:'NW-XXXX-XXXX',qid:'NWID:',qcode:'NWCODE:',space:'games',
     norm(v){let x=up(v).replace(/[^A-Z0-9]/g,'');if(x.startsWith('NW'))x=x.slice(2);return x.length===8&&[...x].every(c=>AL_NX.includes(c))?'NW-'+x.slice(0,4)+'-'+x.slice(4):null},
     hint:'Le client t\'envoie son identifiant NW-… depuis l\'écran « Activation » de New World.',scanHint:'Le client colle le code dans l\'écran « Activation » de New World.'}
@@ -316,10 +319,10 @@ const spaceApps=()=>Object.keys(APPS).filter(inSpace);
 const showId=(app,id)=>APPS[app].show?APPS[app].show(id):id;
 
 /* ---------- lecture d'un message WhatsApp collé ----------
-   On ne garde que ce qui ressemble à un identifiant de l'appli (NX-…, BF-…, PL-…,
+   On ne garde que ce qui ressemble à un identifiant de l'appli (NX-…, BF-…, PL-…, TD-…,
    ou 24 caractères hexadécimaux pour ScoreUp) ; tout le reste du message est ignoré.
    strict=true : pas d'essai « identifiant tapé sans préfixe ». */
-const ID_PREFIX={nexus:'NX',budget:'BF',power:'PL',newworld:'NW'};
+const ID_PREFIX={nexus:'NX',budget:'BF',power:'PL',newworld:'NW',tonedial:'TD'};
 function findIds(app,text,strict){const A=APPS[app],t=String(text||''),ids=[],bad=[];
   const add=v=>{const id=A.norm(v);if(id&&!ids.includes(id))ids.push(id);return id};
   if(app==='scoreup'){(t.match(/[0-9a-f]{4}(?:[\s-]?[0-9a-f]{4}){5}/gi)||[]).forEach(add)}
@@ -361,7 +364,7 @@ let KEYS=null,PASS=null,last=null,q='',cur=lsGet(AKEY)||'nexus';if(!APPS[cur]||!
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
-function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){toast('⚠️ Stockage bloqué')}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){toast(e&&(e.name==='QuotaExceededError'||e.code===22||e.code===1014)?'⚠️ Mémoire du navigateur pleine : rien n\'a été enregistré. Libérez de la place dans les autres applis Thousand Labs.':'⚠️ Stockage bloqué')}}
 let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600)}
 async function copyText(t){try{await navigator.clipboard.writeText(t);toast('Copié ✅')}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('Copié ✅')}catch(_){}a.remove()}}
 function waPhone(p){let d=String(p||'').replace(/\D/g,'');if(d.startsWith('00'))d=d.slice(2);if(d.length===9)d='221'+d;return d}
@@ -551,7 +554,7 @@ const ACT={
   csv:()=>{const h=history_();const rows=[['Date','Appli','Client','WhatsApp','Identifiant','Note','Code']].concat(h.map(x=>[new Date(x.at).toLocaleString('fr-FR'),APPS[x.app]?APPS[x.app].name:x.app,x.client,x.phone,showId(x.app,x.id),x.note,x.code]));
     const csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\n');
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='thousand-codes-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500)},
-  backupVault:()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'thousand-admin-vault',at:Date.now(),vault:localVault()})],{type:'application/json'}));a.download='thousand-admin-cles-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500);lsSet(BKEY,String(Date.now()));render();toast('Sauvegarde téléchargée 💾 : garde-la hors du téléphone (Drive, WhatsApp à toi-même)')}
+  backupVault:()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'thousand-admin-vault',at:Date.now(),vault:localVault()})],{type:'application/json'}));a.download='thousand-admin-cles-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500);lsSet(BKEY,String(Date.now()));render();toast('Sauvegarde téléchargée 💾 : garde-la à deux endroits hors du téléphone (WhatsApp à toi-même + clé USB ou ordinateur)')}
 };
 document.addEventListener('submit',e=>{const f=e.target;if(!f.dataset.form)return;e.preventDefault();FORMS[f.dataset.form]&&FORMS[f.dataset.form](new FormData(f),f)});
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(t&&ACT[t.dataset.act]){e.preventDefault();ACT[t.dataset.act](t)}});

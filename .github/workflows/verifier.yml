@@ -1,0 +1,18 @@
+name: Contrôle automatique
+
+# À chaque envoi : vérifie que l'appli n'est pas cassée (voir .github/verifier.mjs).
+# Si un problème est trouvé, GitHub affiche une croix rouge et envoie un e-mail.
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier l'appli
+        run: node .github/verifier.mjs

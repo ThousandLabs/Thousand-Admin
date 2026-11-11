@@ -359,6 +359,26 @@ const needBackup=()=>+(lsGet(KCKEY)||0)>+(lsGet(BKEY)||0);
 async function saveKeys(){lsSet(VKEY,JSON.stringify(await sealVault(KEYS,PASS)));lsSet(KCKEY,String(Date.now()))}
 async function verify(app,id,code){try{const k=await S.importKey('jwk',pubOf(app),{name:'ECDSA',namedCurve:'P-256'},false,['verify']);return await S.verify({name:'ECDSA',hash:'SHA-256'},k,unb64u(code),enc(id))}catch(e){return false}}
 
+/* ---------- Transfert de licence ----------
+   L'appli du client calcule un code de transfert à partir de son identifiant et de son code
+   d'activation, puis se verrouille. On vérifie ici : 1) que le code d'activation (« preuve »)
+   est authentique pour l'ancien identifiant, 2) que le code de transfert correspond,
+   3) que cette licence n'a pas déjà été transférée. Même calcul que TLX.code dans les applis. */
+const XAL='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+async function xferCode(app,id,sig){const d=new Uint8Array(await S.digest('SHA-256',enc('TL-XFER/v1|'+app+'|'+id+'|'+sig)));let s='';for(let i=0;i<10;i++)s+=XAL[d[i]%XAL.length];return s.slice(0,5)+'-'+s.slice(5)}
+async function licOk(app,id,sig){if(await verify(app,id,sig))return true;const hx=Array.from(new Uint8Array(await S.digest('SHA-256',enc(id+':'+sig))),b=>b.toString(16).padStart(2,'0')).join('');return (LEGACY[app]||[]).includes(hx)}
+const XFER_APPS=['scoreup','budget','nexus','power'];
+function parseXfer(text){const t=String(text||''),r={};
+  r.app=XFER_APPS.find(k=>new RegExp('licence\\s+'+APPS[k].name.replace(/\s+/g,'\\s+'),'i').test(t))||null;
+  let m=t.match(/Code de transfert\s*:\s*([A-Za-z0-9]{5})[\s-]?([A-Za-z0-9]{5})/i);if(m)r.code=(m[1]+'-'+m[2]).toUpperCase();
+  m=t.match(/Preuve de licence\s*:\s*([A-Za-z0-9_\-+\/=]{20,})/i);if(m)r.sig=m[1];
+  m=t.match(/Ancien identifiant\s*:\s*([^\n]+)/i);r.oldRaw=m?m[1].trim():'';
+  r.rest=t.replace(/Preuve de licence\s*:[^\n]*/ig,'').replace(/Ancien identifiant\s*:[^\n]*/ig,'').replace(/Code de transfert\s*:[^\n]*/ig,'');
+  return r}
+/* Chaîne des transferts d'une licence : combien de fois elle a déjà changé de téléphone */
+function xferCount(h,app,id){let n=0,c=id,seen={};for(;;){const e=h.find(x=>x.app===app&&x.id===c&&x.xferFrom);if(!e||seen[c])break;seen[c]=1;n++;c=e.xferFrom}return n}
+const digits=p=>{let d=String(p||'').replace(/\D/g,'');if(d.length>9)d=d.slice(-9);return d};
+
 /* ---------- état ---------- */
 let KEYS=null,PASS=null,last=null,q='',cur=lsGet(AKEY)||'nexus';if(!APPS[cur]||!inSpace(cur))cur=spaceApps()[0];
 const $=s=>document.querySelector(s);
@@ -467,6 +487,7 @@ function render(){
           '<div class="btns" style="margin-top:8px"><button class="btn sm" data-act="copy" data-t="'+esc(it.code)+'">📋 Copier</button><button class="btn sm" data-act="showCodeQR" data-i="'+i+'">🔳 QR</button></div>').join('')+
         (last.warn?'<p class="small" style="color:var(--pri);margin-top:12px">⚠️ '+esc(last.warn)+'</p>':'')+
         '<div class="btns"><button class="btn" data-act="copyMsg">📋 Copier le message</button><button class="btn pri" data-act="sendWa">💬 WhatsApp</button></div>'+(n>1?'<p class="muted small">Le message contient tous les codes, chacun avec l\'identifiant du téléphone auquel il correspond.</p>':'')+'</div>'}
+    if(XFER_APPS.includes(cur))html+='<form class="card" data-form="xfer"><b>🔁 Transfert de licence '+A.name+'</b><p class="muted small">Le client a touché « Transférer ma licence » dans '+A.name+' : son ancien téléphone est verrouillé. Colle ici son message de transfert, avec l\'identifiant du nouveau téléphone.</p><textarea name="msg" required rows="5" style="font:14px/1.45 system-ui,sans-serif" placeholder="Bonjour, je souhaite transférer ma licence '+A.name+'…" autocomplete="off" spellcheck="false"></textarea><label>Nouvel identifiant (s\'il n\'est pas dans le message)</label><input name="nid" class="mono" placeholder="'+A.idPh+'" autocomplete="off"><button class="btn pri block">Vérifier et générer le nouveau code</button><p id="xferRes" class="small"></p></form>';
     html+='<form class="card" data-form="check"><b>🔍 Vérifier un code '+A.name+'</b><label>Identifiant</label><input name="id" class="mono" required placeholder="'+A.idPh+'"><label>Code</label><textarea name="code" required></textarea><button class="btn block">Vérifier</button><p id="checkRes" class="small"></p></form>';
   }
   const list=hc.filter(x=>!q||[x.client,x.id,x.note,x.phone].join(' ').toLowerCase().includes(q.toLowerCase()));
@@ -480,6 +501,7 @@ function render(){
 
 
 function waText(){const A=APPS[last.app],its=last.items,hi='Bonjour'+(last.client?' '+last.client:'')+' 👋\n\n';
+  if(last.xfer)return 'Bonjour'+(last.client?' '+last.client:'')+',\n\nVotre transfert de licence *'+A.name+'* est validé. Voici le code d\'activation de votre nouveau téléphone ('+showId(last.app,its[0].id)+'), à copier en entier :\n\n'+its[0].code+'\n\nVotre ancien téléphone reste verrouillé. Cordialement,\nThousand Labs';
   if(its.length===1)return hi+'Voici ton code d\'activation *'+A.name+'* (à copier en entier) :\n\n'+its[0].code+'\n\nIl fonctionne uniquement sur ton téléphone. Bienvenue ! 🚀';
   return hi+'Voici vos '+its.length+' codes d\'activation *'+A.name+'*. Chaque code marche uniquement sur le téléphone dont l\'identifiant est indiqué (copiez-le en entier) :\n\n'+
     its.map((it,i)=>(i+1)+'. Téléphone '+showId(last.app,it.id)+' :\n'+it.code).join('\n\n')+'\n\nBienvenue ! 🚀'}
@@ -492,7 +514,9 @@ function liveIds(){const el=$('#idIn'),out=$('#idFound');if(!el||!out)return;con
   if(r.bad.length)h+='<br><span class="bad">⚠️ Illisible : '+r.bad.map(esc).join(', ')+'</span>';
   out.className='small';out.innerHTML=h;
   const info=parseMsg(v),f=el.form;if(!f)return;
-  [['phone',info.phone],['note',info.note],['client',info.name]].forEach(([k,val])=>{const i=f.elements[k];if(i&&val&&!i.value)i.value=val})}
+  [['phone',info.phone],['note',info.note],['client',info.name]].forEach(([k,val])=>{const i=f.elements[k];if(i&&val&&!i.value)i.value=val});
+  const pd=digits(f.elements.phone&&f.elements.phone.value),hp=pd?history_().filter(y=>y.app===cur&&digits(y.phone)===pd):[];
+  if(hp.length)out.innerHTML+='<br><span class="bad">🕓 Ce numéro a déjà reçu '+hp.length+' code'+(hp.length>1?'s':'')+' '+A.name+' (dernier le '+new Date(hp[0].at).toLocaleDateString('fr-FR')+').</span>'}
 const FORMS={
   setup:async fd=>{const a=String(fd.get('p1')),b=String(fd.get('p2'));if(a!==b){toast('Les deux mots de passe sont différents');return}if(a.length<10){toast('10 caractères minimum');return}
     if(!confirm('Créer un coffre vide ? Les codes déjà donnés aux clients ne pourront plus être recréés sans ta sauvegarde.'))return;
@@ -512,8 +536,34 @@ const FORMS={
     saveHistory(h);
     const warn=[];if(info.pack&&info.pack!==n)warn.push('Pack de '+info.pack+' annoncé, '+n+' identifiant'+(n>1?'s':'')+' trouvé'+(n>1?'s':'')+'.');
     if(r.bad.length)warn.push('Illisible'+(r.bad.length>1?'s':'')+', à redemander : '+r.bad.join(', ')+'.');
+    const pd=digits(phone),old=pd?h.filter(y=>y.app===app&&digits(y.phone)===pd&&y.at<now):[];
+    if(old.length)warn.push('Ce numéro WhatsApp a déjà reçu '+old.length+' code'+(old.length>1?'s':'')+' '+A.name+' (dernier le '+new Date(old[0].at).toLocaleDateString('fr-FR')+'). S\'il dit avoir changé de téléphone, demande-lui plutôt d\'utiliser « Transférer ma licence ».');
+    r.ids.forEach(id=>{const tr=h.find(y=>y.app===app&&y.xferFrom===id);if(tr)warn.push('L\'identifiant '+showId(app,id)+' a déjà été transféré le '+new Date(tr.at).toLocaleDateString('fr-FR')+' : cet ancien téléphone ne devrait plus être activé.')});
     last={app,client,phone,items,warn:warn.join(' ')};render();
     toast(n>1?n+' codes générés ✅':'Code généré ✅')},
+  xfer:async fd=>{const out=$('#xferRes'),bad=m=>{if(out)out.innerHTML='<span class="bad">❌ '+esc(m)+'</span>';toast('❌ '+m)};
+    const text=String(fd.get('msg')||''),x=parseXfer(text);let app=x.app||cur;
+    if(!XFER_APPS.includes(app))return bad('Appli non reconnue dans le message');
+    if(app!==cur){cur=app;lsSet(AKEY,cur);q=''}
+    const A=APPS[app];if(!KEYS[app])return bad('Crée d\'abord la clé '+A.name);
+    const old=A.norm(x.oldRaw)||(findIds(app,x.oldRaw,true).ids[0]||null);
+    if(!old)return bad('Ancien identifiant introuvable dans le message');
+    if(!x.code)return bad('Code de transfert introuvable dans le message');
+    if(!x.sig)return bad('Preuve de licence introuvable dans le message');
+    if(!(await licOk(app,old,x.sig)))return bad('Preuve de licence invalide : ce téléphone n\'avait pas de licence '+A.name+' authentique');
+    if((await xferCode(app,old,x.sig))!==x.code)return bad('Code de transfert incorrect : le transfert n\'a pas été fait dans l\'appli');
+    const h=history_(),done=h.find(y=>y.app===app&&y.xferFrom===old);
+    if(done)return bad('Cette licence a déjà été transférée le '+new Date(done.at).toLocaleDateString('fr-FR')+' vers '+showId(app,done.id)+' : refuse ce nouveau transfert');
+    const nids=findIds(app,x.rest+'\n'+String(fd.get('nid')||''),true).ids.filter(i=>i!==old);
+    if(!nids.length)return bad('Nouvel identifiant manquant : demande au client celui de son nouveau téléphone');
+    if(nids.length>1)return bad('Plusieurs nouveaux identifiants trouvés : un transfert ne vaut que pour un seul téléphone');
+    const nid=nids[0],src=h.find(y=>y.app===app&&y.id===old)||{},n=xferCount(h,app,old),now=Date.now();
+    const code=await sign(app,nid);
+    h.unshift({at:now,app,id:nid,code,client:src.client||'',phone:src.phone||'',note:'transfert depuis '+showId(app,old)+(n?' · '+(n+1)+'e transfert':''),xferFrom:old});saveHistory(h);
+    const warn=[];if(n)warn.push('Ce client a déjà transféré sa licence '+n+' fois avant celui-ci ('+(n+1)+'e transfert).');
+    if(!src.at)warn.push('L\'ancien identifiant n\'est pas dans ton historique (preuve vérifiée quand même) : vérifie qui est ce client.');
+    last={app,client:src.client||'',phone:src.phone||'',items:[{id:nid,code,dup:0}],warn:warn.join(' '),xfer:1};render();window.scrollTo(0,0);
+    toast('🔁 Transfert vérifié : nouveau code prêt')},
   check:async fd=>{const id=APPS[cur].norm(fd.get('id')),r=$('#checkRes');if(!id){r.innerHTML='<span class="bad">❌ Identifiant invalide</span>';return}
     const c=String(fd.get('code')).replace(/\s+/g,'').replace(/^[A-Z]+CODE:/,'');if(await verify(cur,id,c)){r.innerHTML='<span class="ok">✅ Code valide pour cet appareil</span>';return}
     const hx=Array.from(new Uint8Array(await S.digest('SHA-256',enc(id+':'+c))),b=>b.toString(16).padStart(2,'0')).join('');
@@ -559,7 +609,7 @@ const ACT={
 document.addEventListener('submit',e=>{const f=e.target;if(!f.dataset.form)return;e.preventDefault();FORMS[f.dataset.form]&&FORMS[f.dataset.form](new FormData(f),f)});
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(t&&ACT[t.dataset.act]){e.preventDefault();ACT[t.dataset.act](t)}});
 $('#ov').addEventListener('click',e=>{if(e.target.id==='ov')closeSheet()});
-document.addEventListener('input',e=>{if(e.target.id==='idIn'){liveIds();return}if(e.target.id==='q'){q=e.target.value;const pos=e.target.selectionStart;render();const n=$('#q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}});
+document.addEventListener('input',e=>{if(e.target.id==='idIn'||(e.target.name==='phone'&&e.target.form&&e.target.form.dataset.form==='gen')){liveIds();return}if(e.target.id==='q'){q=e.target.value;const pos=e.target.selectionStart;render();const n=$('#q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}});
 document.addEventListener('change',async e=>{const t=e.target;if(!t.dataset.file||!t.files||!t.files[0])return;const txt=await t.files[0].text();t.value='';
   if(t.dataset.file==='vault'){try{const o=JSON.parse(txt);if(o.app!=='thousand-admin-vault'||!o.vault)throw 0;lsSet(VKEY,JSON.stringify(o.vault));render();toast('✅ Clés restaurées : entre le mot de passe de cette sauvegarde')}catch(_){toast('❌ Fichier de sauvegarde invalide')}}});
 if(!(window.crypto&&crypto.subtle))document.addEventListener('DOMContentLoaded',()=>toast('⚠️ Ouvre Thousand Admin depuis son lien https'));

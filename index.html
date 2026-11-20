@@ -338,7 +338,9 @@ function parseMsg(text){const t=String(text||''),r={};
   m=t.match(/—\s*(\d+)\s+(?:personnes?|appareils?)\s*(\([^)]*\))?/i);if(m){r.pack=+m[1];r.packTxt='pack '+m[1]+(m[2]?' '+m[2].replace(/\s+/g,' '):'')}
   m=t.match(/Paiement\s*:\s*(?:en\s+)?([^\n]+?)(?:\s+depuis\b|\.?\s*$)/im);if(m)r.pay=m[1].replace(/[.,]\s*$/,'').trim();
   m=t.match(/^\s*\[[^\]\n]+\]\s*([^:\n]{2,40}):/m);if(m)r.name=m[1].trim();
-  r.note=[r.packTxt,r.pay].filter(Boolean).join(', ');return r}
+  if(/offre Examens 1 mois/i.test(t))r.formule='exam';else if(/passage à vie|offre à vie/i.test(t))r.formule='vie';
+  if(/passage à vie/i.test(t))r.upgrade=1;
+  r.note=[r.packTxt,r.formule==='exam'?'offre Examens':r.upgrade?'passage à vie':'',r.pay].filter(Boolean).join(', ');return r}
 
 /* ---------- crypto ---------- */
 const S=crypto.subtle,enc=s=>new TextEncoder().encode(s);
@@ -350,6 +352,13 @@ async function aesKey(pass,salt,iter,use){const base=await S.importKey('raw',enc
 async function openVault(v,pass){const k=await aesKey(pass,unb64(v.salt),v.iter,'decrypt');const pt=await S.decrypt({name:'AES-GCM',iv:unb64(v.iv)},k,unb64(v.ct));return JSON.parse(new TextDecoder().decode(pt))}
 async function sealVault(keys,pass){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),iter=210000;const k=await aesKey(pass,salt,iter,'encrypt');const ct=await S.encrypt({name:'AES-GCM',iv},k,enc(JSON.stringify(keys)));return {v:1,iter,salt:b64(salt),iv:b64(iv),ct:b64(ct)}}
 async function sign(app,id){const k=await S.importKey('jwk',KEYS[app],{name:'ECDSA',namedCurve:'P-256'},false,['sign']);return b64u(await S.sign({name:'ECDSA',hash:'SHA-256'},k,enc(id)))}
+/* Offre Examens ScoreUp : code « E » + date de fin AAAAMMJJ + « . » + signature de « identifiant|E|AAAAMMJJ » */
+const EXAM_DAYS=30;
+const ymdOf=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+const ymdFr=y=>y.slice(6,8)+'/'+y.slice(4,6)+'/'+y.slice(0,4);
+const examYmd=()=>{const d=new Date();d.setDate(d.getDate()+EXAM_DAYS);return ymdOf(d)};
+async function signExam(app,id,ymd){return 'E'+ymd+'.'+(await sign(app,id+'|E|'+ymd))}
+const parseExam=c=>{const m=/^E(\d{8})\.([A-Za-z0-9_-]+)$/.exec(String(c||''));return m?{ymd:m[1],sig:m[2]}:null};
 const pubOf=app=>KEYS&&KEYS[app]?{kty:'EC',crv:'P-256',x:KEYS[app].x,y:KEYS[app].y}:PUB[app];
 /* État de la clé : none (aucune), ok (installée dans l'appli), pending (nouvelle, appli pas encore mise à jour), retired (ancienne, à remplacer) */
 const keyState=app=>!KEYS||!KEYS[app]?'none':RETIRED.includes(KEYS[app].x)?'retired':(PUB[app]&&KEYS[app].x===PUB[app].x)?'ok':'pending';
@@ -479,9 +488,9 @@ function render(){
   if(ks==='pending')html+='<div class="card" style="border-color:var(--pri)"><b>⏳ Nouvelle clé pas encore installée dans '+A.name+'</b><p class="muted small">Les codes créés maintenant ne marcheront qu\'une fois '+A.name+' mise à jour avec la clé publique. Envoie-la pour la mise à jour :</p><div class="btns"><button class="btn gold" data-act="copyPub">📋 Copier les clés publiques</button></div></div>';
   if(ks==='none'){
   }else{
-    html+='<form class="card" data-form="gen"><b>🔑 Générer un code '+A.name+'</b><label>Message WhatsApp du client ou identifiant(s)</label><textarea name="id" id="idIn" required rows="4" style="font:14px/1.45 system-ui,sans-serif" placeholder="Colle ici le message WhatsApp du client, même avec plusieurs identifiants. Ou tape l\'identifiant : '+A.idPh+'" autocomplete="off" spellcheck="false"></textarea><p id="idFound" class="small muted" style="margin:6px 0 0">Seuls les identifiants '+A.name+' sont gardés : le reste du message est ignoré.</p><button type="button" class="btn block" data-act="scanId" style="margin-top:8px">📷 Scanner l\'identifiant du client</button><div class="row" style="gap:10px"><div style="flex:1"><label>Nom du client</label><input name="client" maxlength="40" placeholder="Ex : Awa Diop"></div><div style="flex:1"><label>WhatsApp</label><input name="phone" type="tel" inputmode="tel" maxlength="20" placeholder="77 123 45 67"></div></div><label>Note (pack, prix…)</label><input name="note" maxlength="80" placeholder="Ex : pack 5, payé Wave"><button class="btn pri block">Générer le(s) code(s)</button></form>';
+    html+='<form class="card" data-form="gen"><b>🔑 Générer un code '+A.name+'</b><label>Message WhatsApp du client ou identifiant(s)</label><textarea name="id" id="idIn" required rows="4" style="font:14px/1.45 system-ui,sans-serif" placeholder="Colle ici le message WhatsApp du client, même avec plusieurs identifiants. Ou tape l\'identifiant : '+A.idPh+'" autocomplete="off" spellcheck="false"></textarea><p id="idFound" class="small muted" style="margin:6px 0 0">Seuls les identifiants '+A.name+' sont gardés : le reste du message est ignoré.</p><button type="button" class="btn block" data-act="scanId" style="margin-top:8px">📷 Scanner l\'identifiant du client</button><div class="row" style="gap:10px"><div style="flex:1"><label>Nom du client</label><input name="client" maxlength="40" placeholder="Ex : Awa Diop"></div><div style="flex:1"><label>WhatsApp</label><input name="phone" type="tel" inputmode="tel" maxlength="20" placeholder="77 123 45 67"></div></div><label>Note (pack, prix…)</label><input name="note" maxlength="80" placeholder="Ex : pack 5, payé Wave">'+(cur==='scoreup'?'<label>Formule</label><select name="formule" id="fmIn"><option value="vie">À vie (5 000 F · 9 000 F pour 2 · 21 000 F pour 5)</option><option value="exam">Examens, 1 mois (2 000 F) : valable jusqu\'au '+ymdFr(examYmd())+'</option></select><p class="small muted" style="margin:6px 0 0">Un passage à vie (3 000 F) se fait avec la formule « À vie ».</p>':'')+'<button class="btn pri block">Générer le(s) code(s)</button></form>';
     if(last&&last.app===cur){const n=last.items.length;
-      html+='<div class="card"><div class="row"><b>✅ '+(n>1?n+' codes générés'+(last.client?' · '+esc(last.client):''):'Code pour '+esc(last.client||showId(cur,last.items[0].id)))+'</b><span class="tag">'+A.name+'</span></div>'+
+      html+='<div class="card"><div class="row"><b>✅ '+(n>1?n+' codes générés'+(last.client?' · '+esc(last.client):''):'Code pour '+esc(last.client||showId(cur,last.items[0].id)))+'</b><span class="tag">'+A.name+(last.exp?' · Examens jusqu\'au '+ymdFr(last.exp):'')+'</span></div>'+
         last.items.map((it,i)=>(n>1?'<p class="small" style="margin:14px 0 0"><b>'+(i+1)+'.</b> <span class="mono">'+esc(showId(cur,it.id))+'</span></p>':'')+'<div class="codebox">'+esc(it.code)+'</div>'+
           (it.dup?'<p class="small muted">ℹ️ Cet appareil avait déjà reçu un code le '+new Date(it.dup).toLocaleDateString('fr-FR')+'.</p>':'')+
           '<div class="btns" style="margin-top:8px"><button class="btn sm" data-act="copy" data-t="'+esc(it.code)+'">📋 Copier</button><button class="btn sm" data-act="showCodeQR" data-i="'+i+'">🔳 QR</button></div>').join('')+
@@ -502,6 +511,7 @@ function render(){
 
 function waText(){const A=APPS[last.app],its=last.items,hi='Bonjour'+(last.client?' '+last.client:'')+' 👋\n\n';
   if(last.xfer)return 'Bonjour'+(last.client?' '+last.client:'')+',\n\nVotre transfert de licence *'+A.name+'* est validé. Voici le code d\'activation de votre nouveau téléphone ('+showId(last.app,its[0].id)+'), à copier en entier :\n\n'+its[0].code+'\n\nVotre ancien téléphone reste verrouillé. Cordialement,\nThousand Labs';
+  if(last.exp)return hi+'Voici ton code *'+A.name+'*, offre Examens (à copier en entier) :\n\n'+its[0].code+'\n\nAccès complet jusqu\'au '+ymdFr(last.exp)+'. Tu peux passer à vie à tout moment pour 3 000 F. Il fonctionne uniquement sur ton téléphone. Bonnes révisions !';
   if(its.length===1)return hi+'Voici ton code d\'activation *'+A.name+'* (à copier en entier) :\n\n'+its[0].code+'\n\nIl fonctionne uniquement sur ton téléphone. Bienvenue ! 🚀';
   return hi+'Voici vos '+its.length+' codes d\'activation *'+A.name+'*. Chaque code marche uniquement sur le téléphone dont l\'identifiant est indiqué (copiez-le en entier) :\n\n'+
     its.map((it,i)=>(i+1)+'. Téléphone '+showId(last.app,it.id)+' :\n'+it.code).join('\n\n')+'\n\nBienvenue ! 🚀'}
@@ -514,7 +524,7 @@ function liveIds(){const el=$('#idIn'),out=$('#idFound');if(!el||!out)return;con
   if(r.bad.length)h+='<br><span class="bad">⚠️ Illisible : '+r.bad.map(esc).join(', ')+'</span>';
   out.className='small';out.innerHTML=h;
   const info=parseMsg(v),f=el.form;if(!f)return;
-  [['phone',info.phone],['note',info.note],['client',info.name]].forEach(([k,val])=>{const i=f.elements[k];if(i&&val&&!i.value)i.value=val});
+  [['phone',info.phone],['note',info.note],['client',info.name]].forEach(([k,val])=>{const i=f.elements[k];if(i&&val&&!i.value)i.value=val});if(f.elements.formule&&info.formule)f.elements.formule.value=info.formule;
   const pd=digits(f.elements.phone&&f.elements.phone.value),hp=pd?history_().filter(y=>y.app===cur&&digits(y.phone)===pd):[];
   if(hp.length)out.innerHTML+='<br><span class="bad">🕓 Ce numéro a déjà reçu '+hp.length+' code'+(hp.length>1?'s':'')+' '+A.name+' (dernier le '+new Date(hp[0].at).toLocaleDateString('fr-FR')+').</span>'}
 const FORMS={
@@ -530,16 +540,19 @@ const FORMS={
     const info=parseMsg(text),n=r.ids.length;
     const client=String(fd.get('client')||'').trim()||info.name||'',phone=String(fd.get('phone')||'').trim()||info.phone||'',note=String(fd.get('note')||'').trim()||info.note||'';
     const h=history_(),items=[],now=Date.now();
-    for(let i=0;i<n;i++){const id=r.ids[i],code=await sign(app,id),prev=h.find(x=>x.app===app&&x.id===id);
+    const exam=app==='scoreup'&&String(fd.get('formule')||'vie')==='exam',exp=exam?examYmd():'';
+    if(exam&&n>1){toast('❌ L\'offre Examens est pour 1 personne : génère un code par message');return}
+    for(let i=0;i<n;i++){const id=r.ids[i],code=exam?await signExam(app,id,exp):await sign(app,id),prev=h.find(x=>x.app===app&&x.id===id);
       items.push({id,code,dup:prev?prev.at:0});
-      h.unshift({at:now+i,app,id,code,client,phone,note:note+(n>1?(note?' · ':'')+(i+1)+'/'+n:'')})}
+      h.unshift({at:now+i,app,id,code,client,phone,exp:exp||undefined,note:(exam?'Examens jusqu\'au '+ymdFr(exp)+(note?' · ':''):'')+note+(n>1?(note?' · ':'')+(i+1)+'/'+n:'')})}
     saveHistory(h);
     const warn=[];if(info.pack&&info.pack!==n)warn.push('Pack de '+info.pack+' annoncé, '+n+' identifiant'+(n>1?'s':'')+' trouvé'+(n>1?'s':'')+'.');
     if(r.bad.length)warn.push('Illisible'+(r.bad.length>1?'s':'')+', à redemander : '+r.bad.join(', ')+'.');
     const pd=digits(phone),old=pd?h.filter(y=>y.app===app&&digits(y.phone)===pd&&y.at<now):[];
     if(old.length)warn.push('Ce numéro WhatsApp a déjà reçu '+old.length+' code'+(old.length>1?'s':'')+' '+A.name+' (dernier le '+new Date(old[0].at).toLocaleDateString('fr-FR')+'). S\'il dit avoir changé de téléphone, demande-lui plutôt d\'utiliser « Transférer ma licence ».');
     r.ids.forEach(id=>{const tr=h.find(y=>y.app===app&&y.xferFrom===id);if(tr)warn.push('L\'identifiant '+showId(app,id)+' a déjà été transféré le '+new Date(tr.at).toLocaleDateString('fr-FR')+' : cet ancien téléphone ne devrait plus être activé.')});
-    last={app,client,phone,items,warn:warn.join(' ')};render();
+    if(info.upgrade&&!exam&&!r.ids.some(id=>h.some(y=>y.app===app&&y.id===id&&y.exp&&y.at<now)))warn.push('Passage à vie à 3 000 F annoncé, mais aucune offre Examens n\'a été trouvée pour cet identifiant dans ton historique : vérifie avant d\'accepter.');
+    last={app,client,phone,items,exp,warn:warn.join(' ')};render();
     toast(n>1?n+' codes générés ✅':'Code généré ✅')},
   xfer:async fd=>{const out=$('#xferRes'),bad=m=>{if(out)out.innerHTML='<span class="bad">❌ '+esc(m)+'</span>';toast('❌ '+m)};
     const text=String(fd.get('msg')||''),x=parseXfer(text);let app=x.app||cur;
@@ -565,7 +578,7 @@ const FORMS={
     last={app,client:src.client||'',phone:src.phone||'',items:[{id:nid,code,dup:0}],warn:warn.join(' '),xfer:1};render();window.scrollTo(0,0);
     toast('🔁 Transfert vérifié : nouveau code prêt')},
   check:async fd=>{const id=APPS[cur].norm(fd.get('id')),r=$('#checkRes');if(!id){r.innerHTML='<span class="bad">❌ Identifiant invalide</span>';return}
-    const c=String(fd.get('code')).replace(/\s+/g,'').replace(/^[A-Z]+CODE:/,'');if(await verify(cur,id,c)){r.innerHTML='<span class="ok">✅ Code valide pour cet appareil</span>';return}
+    const c=String(fd.get('code')).replace(/\s+/g,'').replace(/^[A-Z]+CODE:/,''),ex=cur==='scoreup'?parseExam(c):null;if(ex){r.innerHTML=(await verify(cur,id+'|E|'+ex.ymd,ex.sig))?'<span class="ok">✅ Code Examens valide pour cet appareil, jusqu\'au '+ymdFr(ex.ymd)+'</span>':'<span class="bad">❌ Code invalide pour cet appareil</span>';return}if(await verify(cur,id,c)){r.innerHTML='<span class="ok">✅ Code valide pour cet appareil</span>';return}
     const hx=Array.from(new Uint8Array(await S.digest('SHA-256',enc(id+':'+c))),b=>b.toString(16).padStart(2,'0')).join('');
     r.innerHTML=(LEGACY[cur]||[]).includes(hx)?'<span class="ok">✅ Ancien code de l\'équipe : toujours valable sur cet appareil</span>':'<span class="bad">❌ Code invalide pour cet appareil</span>'},
   editRec:fd=>{const at=String(fd.get('at')),h=history_(),x=h.find(y=>String(y.at)===at);if(!x){closeSheet();toast('❌ Code introuvable');return}
@@ -587,8 +600,8 @@ const ACT={
     try{const k=await newKey();KEYS[cur]=k;await saveKeys();render();toast('✅ Nouvelle clé '+A.name+' créée sur ce téléphone')}catch(e){toast('❌ Création impossible sur ce navigateur')}},
   copyPub:()=>{const m=pubMsg();if(m==='THOUSAND-PUB {}'){toast('Aucune nouvelle clé pour l\'instant');return}copyText(m)},
   regen:async t=>{const h=history_(),x=h.find(y=>String(y.at)===t.dataset.at);if(!x||!KEYS[x.app])return;
-    const code=await sign(x.app,x.id),now=Date.now();h.unshift({at:now,app:x.app,id:x.id,code,client:x.client,phone:x.phone,note:(x.note?x.note+' · ':'')+'nouveau code'});saveHistory(h);
-    cur=x.app;lsSet(AKEY,cur);last={app:x.app,client:x.client,phone:x.phone,items:[{id:x.id,code,dup:0}],warn:''};render();window.scrollTo(0,0);toast('🔄 Nouveau code prêt : envoie-le au client')},
+    const code=x.exp?await signExam(x.app,x.id,x.exp):await sign(x.app,x.id),now=Date.now();h.unshift({at:now,app:x.app,id:x.id,code,client:x.client,phone:x.phone,exp:x.exp,note:(x.note?x.note+' · ':'')+'nouveau code'});saveHistory(h);
+    cur=x.app;lsSet(AKEY,cur);last={app:x.app,client:x.client,phone:x.phone,items:[{id:x.id,code,dup:0}],exp:x.exp||'',warn:''};render();window.scrollTo(0,0);toast('🔄 Nouveau code prêt : envoie-le au client')},
   edit:t=>{const x=history_().find(y=>String(y.at)===t.dataset.at);if(!x)return;const A=APPS[x.app]||APPS[cur];
     openSheet('<div class="row"><b>✍️ Modifier les infos</b><button class="btn sm" data-act="closeSheet">✕</button></div><p class="muted small cm">'+esc(A.name)+' · '+esc(showId(x.app,x.id))+' · '+new Date(x.at).toLocaleDateString('fr-FR')+'<br>Le code ne change pas : seules les infos de l\'historique sont modifiées.</p><form data-form="editRec"><input type="hidden" name="at" value="'+x.at+'"><label>Nom du client</label><input name="client" maxlength="40" placeholder="Ex : Awa Diop" value="'+esc(x.client||'')+'"><label>WhatsApp</label><input name="phone" type="tel" inputmode="tel" maxlength="20" placeholder="77 123 45 67" value="'+esc(x.phone||'')+'"><label>Note (pack, prix…)</label><input name="note" maxlength="120" placeholder="Ex : pack 5, payé Wave" value="'+esc(x.note||'')+'"><button class="btn pri block">Enregistrer</button></form>');
     const i=document.querySelector('form[data-form=editRec] [name=client]');if(i)setTimeout(()=>i.focus(),50)},
